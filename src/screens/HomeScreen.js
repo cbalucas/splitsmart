@@ -30,23 +30,24 @@ export default function HomeScreen() {
     participants: allParticipants,
   } = useContext(EventContext);
 
+  // Búsqueda y filtros
   const [search, setSearch] = useState('');
   const [filterStateActive, setFilterStateActive] = useState(false);
   const [filterDateActive, setFilterDateActive] = useState(false);
 
-  // Modal Ver/Editar Evento
+  // Modal ver/editar
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Mini-modal Agregar Participante
+  // Sub-modal seleccionar participantes
   const [showAddList, setShowAddList] = useState(false);
   const [addListSearch, setAddListSearch] = useState('');
 
-  // Sección participantes colapsada por defecto
+  // Sección participantes colapsada
   const [participantsCollapsed, setParticipantsCollapsed] = useState(true);
 
-  // Campos del evento en modal
+  // Campos dentro del modal
   const [selectedId, setSelectedId] = useState(null);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
@@ -56,25 +57,25 @@ export default function HomeScreen() {
   const [total, setTotal] = useState('');
   const [per, setPer] = useState('0.00');
 
-  // “ayer” para filtros
+  // “Ayer” para filtros de fecha
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // Filtrar eventos
-  const filtered = events.filter(e => {
-    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
-    const matchesState = !filterStateActive || e.estadoEvento;
-    const evDate = new Date(e.date);
-    const matchesDate = !filterDateActive || evDate >= yesterday;
-    return matchesSearch && matchesState && matchesDate;
+  // Aplica búsqueda + filtros
+  const filtered = events.filter((e) => {
+    const mSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const mState = !filterStateActive || e.estadoEvento;
+    const eDate = new Date(e.date);
+    const mDate = !filterDateActive || eDate >= yesterday;
+    return mSearch && mState && mDate;
   });
 
-  // Cerrar evento
-  const closeEvent = id => updateEvent(id, { estadoEvento: false });
+  // Cierra evento
+  const closeEvent = (id) => updateEvent(id, { estadoEvento: false });
 
-  // Abrir modal en modo View
-  const openViewModal = item => {
+  // Abre modal en modo ver
+  const openViewModal = (item) => {
     setModalMode('view');
     setSelectedId(item.id);
     setName(item.name);
@@ -82,74 +83,76 @@ export default function HomeScreen() {
     setAddress(item.address || '');
     setMapUrl(item.map || '');
     setWhatsappEnvio(item.whatsappEnvio);
-    setTotal(item.total?.toString() || '');
-    // recalc per immediately
-    const p0 = getParticipantsForEvent(item.id).length;
-    const t0 = parseFloat(item.total) || 0;
-    setPer(p0 > 0 ? (t0 / p0).toFixed(2) : '0.00');
+    setTotal((item.total ?? '').toString());
+    const cnt = getParticipantsForEvent(item.id).length;
+    const initialPer = item.per != null ? item.per : (item.total ?? 0) / (cnt || 1);
+    setPer(initialPer.toFixed(2));
     setModalVisible(true);
     setParticipantsCollapsed(true);
   };
-  const openEditModal = item => {
+  // Pasa a modo editar
+  const openEditModal = (item) => {
     openViewModal(item);
     setModalMode('edit');
   };
 
-  // Manejar cambio de fecha
+  // Selector de fecha
   const handleDateChange = (_, sel) => {
     setShowDatePicker(false);
     if (sel) setDate(sel.toISOString().split('T')[0]);
   };
 
-  // Recalcular "por persona" al cambiar total o evento
+  // Recalcula “c/u” al cambiar total
   useEffect(() => {
     if (!selectedId) return;
     const t = parseFloat(total) || 0;
-    const p = getParticipantsForEvent(selectedId).length;
-    setPer(p > 0 ? (t / p).toFixed(2) : '0.00');
+    const cnt = getParticipantsForEvent(selectedId).length;
+    setPer(cnt > 0 ? (t / cnt).toFixed(2) : '0.00');
   }, [total, selectedId]);
 
-  // Guardar cambios
+  // Guarda cambios en editar
   const handleSave = () => {
-    const currentCount = getParticipantsForEvent(selectedId).length;
+    const t = parseFloat(total) || 0;
+    const cnt = getParticipantsForEvent(selectedId).length;
+    const newPer = cnt > 0 ? parseFloat((t / cnt).toFixed(2)) : 0;
     updateEvent(selectedId, {
       name,
       date,
       address,
       map: mapUrl,
       whatsappEnvio,
-      total: parseFloat(total) || 0,
-      per: parseFloat(per) || 0,
-      participants: currentCount,
+      total: t,
+      per: newPer,
+      participants: cnt,
     });
     setModalVisible(false);
   };
 
-  // Render de cada tarjeta de evento
+  // Render de cada tarjeta
   const renderEvent = ({ item }) => {
-    const evDate = new Date(item.date);
-    const dateIconName = evDate >= yesterday ? 'today-outline' : 'calendar-outline';
-    const dateIconColor = evDate >= yesterday ? '#00FF55' : '#FF6B6B';
-    const whatsappColor = item.whatsappEnvio ? '#00FF55' : '#888';
-    const mapColor = item.map ? '#4285F4' : '#888';
-    const viewColor = '#4285F4';
-    const lockIconName = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
-    const lockColor = item.estadoEvento ? '#00FF55' : '#FF6B6B';
-    const editColor = item.estadoEvento ? '#4285F4' : '#888';
+    const eDate = new Date(item.date);
+    const dateIcon = eDate >= yesterday ? 'today-outline' : 'calendar-outline';
+    const dateColor = eDate >= yesterday ? '#00FF55' : '#FF6B6B';
+    const whatsappClr = item.whatsappEnvio ? '#00FF55' : '#888';
+    const mapClr = item.map ? '#4285F4' : '#888';
+    const viewClr = '#4285F4';
+    const lockIcon = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
+    const lockClr = item.estadoEvento ? '#00FF55' : '#FF6B6B';
+    const editClr = item.estadoEvento ? '#4285F4' : '#888';
 
-    const count = getParticipantsForEvent(item.id).length;
-    const totalFmt = Number(item.total).toLocaleString();
-    const perFmt = Number(item.total / (count || 1)).toLocaleString();
+    const cnt = getParticipantsForEvent(item.id).length;
+    const totalValue = item.total ?? 0;
+    const perValue = item.per != null ? item.per : totalValue / (cnt || 1);
+    const totalFmt = totalValue.toLocaleString();
+    const perFmt = perValue.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
     return (
       <View style={styles.card}>
         <View style={styles.cardContent}>
-          <Ionicons
-            name={dateIconName}
-            size={40}
-            color={dateIconColor}
-            style={styles.eventIcon}
-          />
+          <Ionicons name={dateIcon} size={40} color={dateColor} style={styles.eventIcon} />
           <View style={styles.eventInfo}>
             <Text style={styles.eventName}>{item.name}</Text>
             <Text style={styles.eventDate}>{item.date}</Text>
@@ -160,33 +163,33 @@ export default function HomeScreen() {
             <Text style={styles.amountSub}>c/u ${perFmt}</Text>
             <View style={styles.participantsRow}>
               <Ionicons name="people-outline" size={16} color="#AAA" />
-              <Text style={styles.eventParticipantsCount}>{count}</Text>
+              <Text style={styles.eventParticipantsCount}>{cnt}</Text>
             </View>
           </View>
         </View>
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => openViewModal(item)}>
-            <Ionicons name="eye-outline" size={20} color={viewColor} />
+            <Ionicons name="eye-outline" size={20} color={viewClr} />
           </TouchableOpacity>
           <View style={styles.actionButton}>
-            <Ionicons name="logo-whatsapp" size={20} color={whatsappColor} />
+            <Ionicons name="logo-whatsapp" size={20} color={whatsappClr} />
           </View>
           <TouchableOpacity
             style={styles.actionButton}
             disabled={!item.map}
             onPress={() => item.map && Linking.openURL(item.map)}
           >
-            <Ionicons name="map-outline" size={20} color={mapColor} />
+            <Ionicons name="map-outline" size={20} color={mapClr} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => closeEvent(item.id)}>
-            <Ionicons name={lockIconName} size={20} color={lockColor} />
+            <Ionicons name={lockIcon} size={20} color={lockClr} />
           </TouchableOpacity>
           <TouchableOpacity
             disabled={!item.estadoEvento}
             style={styles.actionButton}
             onPress={() => openEditModal(item)}
           >
-            <Ionicons name="create-outline" size={20} color={editColor} />
+            <Ionicons name="create-outline" size={20} color={editClr} />
           </TouchableOpacity>
         </View>
       </View>
@@ -195,7 +198,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header principal */}
+      {/* Header */}
       <View style={styles.header}>
         <TextInput
           placeholder="Buscar evento"
@@ -204,20 +207,14 @@ export default function HomeScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity
-          onPress={() => setFilterStateActive(!filterStateActive)}
-          style={styles.filterButton}
-        >
+        <TouchableOpacity onPress={() => setFilterStateActive(!filterStateActive)} style={styles.filterButton}>
           <Ionicons
             name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'}
             size={24}
             color={filterStateActive ? '#00FF55' : '#FFF'}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setFilterDateActive(!filterDateActive)}
-          style={styles.filterButton}
-        >
+        <TouchableOpacity onPress={() => setFilterDateActive(!filterDateActive)} style={styles.filterButton}>
           <Ionicons
             name={filterDateActive ? 'today-outline' : 'calendar-outline'}
             size={24}
@@ -229,20 +226,16 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Lista de eventos */}
       <FlatList
         data={filtered}
-        keyExtractor={i => i.id}
+        keyExtractor={(i) => i.id}
         renderItem={renderEvent}
         contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
       />
 
       {/* Modal Ver/Editar Evento */}
-      <Modal
-        transparent
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal transparent visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
           <View style={styles.modalContent}>
             {/* Header del modal */}
@@ -257,10 +250,10 @@ export default function HomeScreen() {
               )}
             </View>
 
-            {/* Switch Whatsapp */}
+            {/* Switch WhatsApp */}
             <View style={styles.switchRow}>
               <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={styles.switchLabel}>Envio por Whatsapp:</Text>
+              <Text style={styles.switchLabel}>Envío por WhatsApp:</Text>
               <Switch
                 value={whatsappEnvio}
                 onValueChange={setWhatsappEnvio}
@@ -270,15 +263,10 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Inputs texto */}
+            {/* Inputs básicos */}
             {[
               { icon: 'text-outline', value: name, setter: setName, placeholder: 'Nombre del evento' },
-              {
-                icon: 'calendar-number-outline',
-                value: date,
-                setter: setDate,
-                placeholder: 'YYYY-MM-DD',
-              },
+              { icon: 'calendar-number-outline', value: date, setter: setDate, placeholder: 'YYYY-MM-DD' },
               { icon: 'trail-sign-outline', value: address, setter: setAddress, placeholder: 'Dirección' },
               { icon: 'location-outline', value: mapUrl, setter: setMapUrl, placeholder: 'Mapa URL' },
             ].map((f, i) => (
@@ -326,35 +314,21 @@ export default function HomeScreen() {
 
             {/* Sección Participantes */}
             <View style={styles.partHeader}>
-              {(() => {
-                const count = selectedId
-                  ? getParticipantsForEvent(selectedId).length
-                  : 0;
-                return (
-                  <Text style={styles.sectionTitle}>
-                    Participantes ({count})
-                  </Text>
-                );
-              })()}
+              <Text style={styles.sectionTitle}>
+                Participantes ({getParticipantsForEvent(selectedId).length})
+              </Text>
               <TouchableOpacity
-                onPress={() => setParticipantsCollapsed(!participantsCollapsed)}
+                onPress={() => setParticipantsCollapsed((v) => !v)}
                 style={styles.toggleListButton}
               >
                 <Ionicons
-                  name={
-                    participantsCollapsed
-                      ? 'chevron-down-outline'
-                      : 'chevron-up-outline'
-                  }
+                  name={participantsCollapsed ? 'chevron-down-outline' : 'chevron-up-outline'}
                   size={20}
                   color="#FFF"
                 />
               </TouchableOpacity>
               {modalMode === 'edit' && (
-                <TouchableOpacity
-                  onPress={() => setShowAddList(true)}
-                  style={styles.addIconButton}
-                >
+                <TouchableOpacity onPress={() => setShowAddList(true)} style={styles.addIconButton}>
                   <Ionicons name="person-add-outline" size={20} color="#00FF55" />
                 </TouchableOpacity>
               )}
@@ -370,10 +344,10 @@ export default function HomeScreen() {
                   style={styles.addListSearchInput}
                 />
                 <FlatList
-                  data={getParticipantsForEvent(selectedId).filter(p =>
+                  data={getParticipantsForEvent(selectedId).filter((p) =>
                     p.name.toLowerCase().includes(addListSearch.toLowerCase())
                   )}
-                  keyExtractor={p => p.id}
+                  keyExtractor={(p) => p.id}
                   renderItem={({ item }) => (
                     <View style={styles.partRow}>
                       <Ionicons name="person-outline" size={20} color="#FFF" />
@@ -383,11 +357,7 @@ export default function HomeScreen() {
                           onPress={() => removeParticipantFromEvent(selectedId, item.id)}
                           style={styles.partRemove}
                         >
-                          <Ionicons
-                            name="trash-outline"
-                            size={20}
-                            color="#FF6B6B"
-                          />
+                          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -397,15 +367,10 @@ export default function HomeScreen() {
               </>
             )}
 
-            {/* Mini-modal Agregar Participante */}
+            {/* Sub-modal Agregar Participante */}
             {showAddList && (
               <Modal transparent animationType="slide">
-                <View
-                  style={[
-                    styles.addListOverlay,
-                    { backgroundColor: 'rgba(0,0,0,0.8)' },
-                  ]}
-                >
+                <View style={[styles.addListOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
                   <Text style={styles.addListTitle}>Participantes</Text>
                   <TextInput
                     placeholder="Buscar participante"
@@ -417,58 +382,41 @@ export default function HomeScreen() {
                   <FlatList
                     data={allParticipants
                       .filter(
-                        p =>
-                          !getParticipantsForEvent(selectedId).some(
-                            x => x.id === p.id
-                          )
+                        (p) =>
+                          !getParticipantsForEvent(selectedId)
+                            .map((x) => x.id)
+                            .includes(p.id)
                       )
-                      .filter(p =>
-                        p.name
-                          .toLowerCase()
-                          .includes(addListSearch.toLowerCase())
-                      )}
-                    keyExtractor={p => p.id}
+                      .filter((p) => p.name.toLowerCase().includes(addListSearch.toLowerCase()))}
+                    keyExtractor={(p) => p.id}
                     renderItem={({ item }) => (
                       <TouchableOpacity
                         style={styles.partRow}
                         onPress={() => {
                           addParticipantToEvent(selectedId, item.id);
-                          setShowAddList(false);
+                          setAddListSearch('');
                         }}
                       >
-                        <Ionicons
-                          name="person-outline"
-                          size={20}
-                          color="#FFF"
-                        />
+                        <Ionicons name="person-outline" size={20} color="#FFF" />
                         <Text style={styles.partName}>{item.name}</Text>
                       </TouchableOpacity>
                     )}
                     style={{ maxHeight: 250 }}
                   />
-                  <TouchableOpacity
-                    style={styles.addListClose}
-                    onPress={() => setShowAddList(false)}
-                  >
+                  <TouchableOpacity style={styles.addListClose} onPress={() => setShowAddList(false)}>
                     <Text style={styles.addListCloseText}>Cerrar</Text>
                   </TouchableOpacity>
                 </View>
               </Modal>
             )}
 
-            {/* Footer */}
+            {/* Footer del modal */}
             <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonDisabled]}
-                onPress={() => setModalVisible(false)}
-              >
+              <TouchableOpacity style={[styles.button, styles.buttonDisabled]} onPress={() => setModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
               {modalMode !== 'view' && (
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonPrimary]}
-                  onPress={handleSave}
-                >
+                <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleSave}>
                   <Text style={styles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
               )}
@@ -483,39 +431,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   /* Pantalla principal */
   container: { flex: 1, backgroundColor: '#0A0E1A' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#1F2230',
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#0F1120',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    color: '#FFF',
-    fontSize: 16,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2230' },
+  searchInput: { flex: 1, backgroundColor: '#0F1120', borderRadius: 12, paddingHorizontal: 12, color: '#FFF', fontSize: 16 },
   filterButton: { marginLeft: 12, padding: 4 },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#00FF55',
-  },
-  card: {
-    backgroundColor: '#1F2230',
-    borderRadius: 12,
-    marginBottom: 12,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
+  avatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#00FF55' },
+  card: { backgroundColor: '#1F2230', borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
+  cardContent: { flexDirection: 'row', alignItems: 'center', padding: 12 },
   eventIcon: { marginRight: 12 },
   eventInfo: { flex: 2 },
   eventName: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
@@ -524,66 +445,32 @@ const styles = StyleSheet.create({
   amounts: { alignItems: 'flex-end', marginRight: 12 },
   amountText: { color: '#00FF55', fontWeight: 'bold' },
   amountSub: { color: '#AAA', fontSize: 12, marginTop: 2 },
-  participantsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
+  participantsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   eventParticipantsCount: { color: '#AAA', fontSize: 14, marginLeft: 4 },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 8,
-    backgroundColor: '#0F1120',
-  },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', padding: 8, backgroundColor: '#0F1120' },
   actionButton: { marginLeft: 16 },
 
-  /* Modal principal */
+  /* Modal */
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  modalContent: {
-    width: '90%',
-    backgroundColor: '#1F2230',
-    borderRadius: 12,
-    padding: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+  modalContent: { width: '90%', backgroundColor: '#1F2230', borderRadius: 12, padding: 16 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   modalTitle: { fontSize: 20, color: '#FFF', fontWeight: 'bold' },
-  modalEditLink: {
-    color: '#00FF55',
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
+  modalEditLink: { color: '#00FF55', fontSize: 16, textDecorationLine: 'underline' },
 
-  /* Switch Whatsapp */
+  /* Switch WhatsApp */
   switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   modalIcon: { marginRight: 12 },
   switchLabel: { flex: 1, color: '#FFF', fontSize: 16 },
 
   /* Inputs */
   inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  modalInput: {
-    flex: 1,
-    backgroundColor: '#0F1120',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    color: '#FFF',
-  },
+  modalInput: { flex: 1, backgroundColor: '#0F1120', borderRadius: 8, paddingHorizontal: 12, color: '#FFF' },
   calIcon: { marginLeft: 8 },
   dollarSign: { color: '#FFF', fontSize: 16, marginRight: 4 },
 
   /* Sección Participantes */
   partHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
-  sectionTitle: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    flex: 1,
-  },
+  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold', flex: 1 },
   toggleListButton: { padding: 4 },
   addIconButton: { padding: 4, marginLeft: 8 },
   addListSearchInput: {
@@ -594,29 +481,18 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginVertical: 8,
   },
-
   partRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   partName: { color: '#FFF', marginLeft: 8, flex: 1 },
   partRemove: { padding: 4 },
 
-  /* Mini-modal Agregar Participante */
+  /* Sub-modal Agregar Participante */
   addListOverlay: { flex: 1, justifyContent: 'center', padding: 16 },
   addListTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  addListClose: {
-    backgroundColor: '#696969',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    alignItems: 'center',
-  },
+  addListClose: { backgroundColor: '#696969', borderRadius: 12, padding: 12, marginTop: 8, alignItems: 'center' },
   addListCloseText: { color: '#FFF', fontWeight: 'bold' },
 
   /* Footer modal */
-  modalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
+  modalFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
   button: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   buttonPrimary: { backgroundColor: '#00FF55', marginLeft: 8 },
   buttonDisabled: { backgroundColor: '#696969', marginRight: 8 },
