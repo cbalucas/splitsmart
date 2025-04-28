@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.js
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -21,45 +21,59 @@ import { EventContext } from '../context/EventContext';
 
 export default function HomeScreen() {
   const { logout } = useContext(AuthContext);
-  const { events, updateEvent } = useContext(EventContext);
+  const {
+    events,
+    updateEvent,
+    getParticipantsForEvent,
+    addParticipantToEvent,
+    removeParticipantFromEvent,
+    participants: allParticipants,
+  } = useContext(EventContext);
 
   const [search, setSearch] = useState('');
   const [filterStateActive, setFilterStateActive] = useState(false);
   const [filterDateActive, setFilterDateActive] = useState(false);
 
-  // Modal state
+  // Modal Ver/Editar Evento
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Event fields
+  // Mini-modal Agregar Participante
+  const [showAddList, setShowAddList] = useState(false);
+  const [addListSearch, setAddListSearch] = useState('');
+
+  // Sección participantes colapsada por defecto
+  const [participantsCollapsed, setParticipantsCollapsed] = useState(true);
+
+  // Campos del evento en modal
   const [selectedId, setSelectedId] = useState(null);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [address, setAddress] = useState('');
   const [mapUrl, setMapUrl] = useState('');
   const [whatsappEnvio, setWhatsappEnvio] = useState(false);
   const [total, setTotal] = useState('');
-  const [participants, setParticipants] = useState(0);
   const [per, setPer] = useState('0.00');
 
-  // compute yesterday
-  const today     = new Date();
+  // “ayer” para filtros
+  const today = new Date();
   const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-  // filtering
+  // Filtrar eventos
   const filtered = events.filter(e => {
     const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
-    const matchesState  = !filterStateActive || e.estadoEvento;
-    const eventDate     = new Date(e.date);
-    const matchesDate   = !filterDateActive || eventDate >= yesterday;
+    const matchesState = !filterStateActive || e.estadoEvento;
+    const evDate = new Date(e.date);
+    const matchesDate = !filterDateActive || evDate >= yesterday;
     return matchesSearch && matchesState && matchesDate;
   });
 
+  // Cerrar evento
   const closeEvent = id => updateEvent(id, { estadoEvento: false });
 
-  // open modals
+  // Abrir modal en modo View
   const openViewModal = item => {
     setModalMode('view');
     setSelectedId(item.id);
@@ -69,31 +83,35 @@ export default function HomeScreen() {
     setMapUrl(item.map || '');
     setWhatsappEnvio(item.whatsappEnvio);
     setTotal(item.total?.toString() || '');
-    setParticipants(item.participants || 0);
-    setPer(item.per?.toFixed(2) || '0.00');
+    // recalc per immediately
+    const p0 = getParticipantsForEvent(item.id).length;
+    const t0 = parseFloat(item.total) || 0;
+    setPer(p0 > 0 ? (t0 / p0).toFixed(2) : '0.00');
     setModalVisible(true);
+    setParticipantsCollapsed(true);
   };
   const openEditModal = item => {
     openViewModal(item);
     setModalMode('edit');
   };
 
-  // date picker
+  // Manejar cambio de fecha
   const handleDateChange = (_, sel) => {
     setShowDatePicker(false);
-    if (sel) {
-      setDate(sel.toISOString().split('T')[0]);
-    }
+    if (sel) setDate(sel.toISOString().split('T')[0]);
   };
 
-  // recalc per
-  React.useEffect(() => {
+  // Recalcular "por persona" al cambiar total o evento
+  useEffect(() => {
+    if (!selectedId) return;
     const t = parseFloat(total) || 0;
-    const p = participants;
+    const p = getParticipantsForEvent(selectedId).length;
     setPer(p > 0 ? (t / p).toFixed(2) : '0.00');
-  }, [total, participants]);
+  }, [total, selectedId]);
 
+  // Guardar cambios
   const handleSave = () => {
+    const currentCount = getParticipantsForEvent(selectedId).length;
     updateEvent(selectedId, {
       name,
       date,
@@ -102,69 +120,57 @@ export default function HomeScreen() {
       whatsappEnvio,
       total: parseFloat(total) || 0,
       per: parseFloat(per) || 0,
-      participants,
+      participants: currentCount,
     });
     setModalVisible(false);
   };
 
+  // Render de cada tarjeta de evento
   const renderEvent = ({ item }) => {
-    const eventDate     = new Date(item.date);
-    const dateIconName  = eventDate >= yesterday ? 'today-outline' : 'calendar-outline';
-    const dateIconColor = eventDate >= yesterday ? '#00FF55' : '#FF6B6B';
+    const evDate = new Date(item.date);
+    const dateIconName = evDate >= yesterday ? 'today-outline' : 'calendar-outline';
+    const dateIconColor = evDate >= yesterday ? '#00FF55' : '#FF6B6B';
     const whatsappColor = item.whatsappEnvio ? '#00FF55' : '#888';
-    const mapColor      = item.map ? '#4285F4' : '#888';
-    const viewColor     = '#4285F4';
-    const lockIconName  = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
-    const lockColor     = item.estadoEvento ? '#00FF55' : '#FF6B6B';
-    const editColor     = item.estadoEvento ? '#4285F4' : '#888';
+    const mapColor = item.map ? '#4285F4' : '#888';
+    const viewColor = '#4285F4';
+    const lockIconName = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
+    const lockColor = item.estadoEvento ? '#00FF55' : '#FF6B6B';
+    const editColor = item.estadoEvento ? '#4285F4' : '#888';
+
+    const count = getParticipantsForEvent(item.id).length;
+    const totalFmt = Number(item.total).toLocaleString();
+    const perFmt = Number(item.total / (count || 1)).toLocaleString();
 
     return (
       <View style={styles.card}>
         <View style={styles.cardContent}>
-          <Ionicons name={dateIconName} size={40} color={dateIconColor} style={styles.eventIcon} />
+          <Ionicons
+            name={dateIconName}
+            size={40}
+            color={dateIconColor}
+            style={styles.eventIcon}
+          />
           <View style={styles.eventInfo}>
             <Text style={styles.eventName}>{item.name}</Text>
             <Text style={styles.eventDate}>{item.date}</Text>
-            {item.address ? <Text style={styles.eventAddress}>{item.address}</Text> : null}
+            {item.address && <Text style={styles.eventAddress}>{item.address}</Text>}
           </View>
           <View style={styles.amounts}>
-   {/*
-     Formateamos con separadores de miles
-   */}
-   {(() => {
-     const fmtTotal = Number(item.total).toLocaleString();
-     return <Text style={styles.amountText}>${fmtTotal}</Text>;
-   })()}
-
-   {/*
-     “c/u” en lugar de “por persona”
-   */}
-   {(() => {
-     const fmtPer = Number(item.per).toLocaleString();
-     return <Text style={styles.amountSub}>c/u ${fmtPer}</Text>;
-   })()}
-
-   {/*
-     Icono + número de participantes
-   */}
-   <View style={styles.participantsRow}>
-     <Ionicons name="people-outline" size={16} color="#AAA" />
-     <Text style={styles.eventParticipantsCount}>
-       {item.participants}
-     </Text>
-   </View>
- </View>
+            <Text style={styles.amountText}>${totalFmt}</Text>
+            <Text style={styles.amountSub}>c/u ${perFmt}</Text>
+            <View style={styles.participantsRow}>
+              <Ionicons name="people-outline" size={16} color="#AAA" />
+              <Text style={styles.eventParticipantsCount}>{count}</Text>
+            </View>
+          </View>
         </View>
-
         <View style={styles.actions}>
           <TouchableOpacity onPress={() => openViewModal(item)}>
             <Ionicons name="eye-outline" size={20} color={viewColor} />
           </TouchableOpacity>
-
           <View style={styles.actionButton}>
             <Ionicons name="logo-whatsapp" size={20} color={whatsappColor} />
           </View>
-
           <TouchableOpacity
             style={styles.actionButton}
             disabled={!item.map}
@@ -172,21 +178,15 @@ export default function HomeScreen() {
           >
             <Ionicons name="map-outline" size={20} color={mapColor} />
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.actionButton} onPress={() => closeEvent(item.id)}>
             <Ionicons name={lockIconName} size={20} color={lockColor} />
           </TouchableOpacity>
-
           <TouchableOpacity
             disabled={!item.estadoEvento}
             style={styles.actionButton}
             onPress={() => openEditModal(item)}
           >
             <Ionicons name="create-outline" size={20} color={editColor} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
           </TouchableOpacity>
         </View>
       </View>
@@ -195,7 +195,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* header */}
+      {/* Header principal */}
       <View style={styles.header}>
         <TextInput
           placeholder="Buscar evento"
@@ -204,11 +204,25 @@ export default function HomeScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity onPress={() => setFilterStateActive(!filterStateActive)} style={styles.filterButton}>
-          <Ionicons name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'} size={24} color={filterStateActive ? '#00FF55' : '#FFF'} />
+        <TouchableOpacity
+          onPress={() => setFilterStateActive(!filterStateActive)}
+          style={styles.filterButton}
+        >
+          <Ionicons
+            name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'}
+            size={24}
+            color={filterStateActive ? '#00FF55' : '#FFF'}
+          />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setFilterDateActive(!filterDateActive)} style={styles.filterButton}>
-          <Ionicons name={filterDateActive ? 'today-outline' : 'calendar-outline'} size={24} color={filterDateActive ? '#00FF55' : '#FFF'} />
+        <TouchableOpacity
+          onPress={() => setFilterDateActive(!filterDateActive)}
+          style={styles.filterButton}
+        >
+          <Ionicons
+            name={filterDateActive ? 'today-outline' : 'calendar-outline'}
+            size={24}
+            color={filterDateActive ? '#00FF55' : '#FFF'}
+          />
         </TouchableOpacity>
         <TouchableOpacity onPress={logout} style={{ marginLeft: 16 }}>
           <Image source={require('../assets/avatar.png')} style={styles.avatar} />
@@ -217,22 +231,21 @@ export default function HomeScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={i => i.id}
         renderItem={renderEvent}
         contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
       />
 
-       {/* Modal ver/editar */}
-       <Modal
+      {/* Modal Ver/Editar Evento */}
+      <Modal
         transparent
         visible={modalVisible}
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
           <View style={styles.modalContent}>
-
-            {/* Header */}
+            {/* Header del modal */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {modalMode === 'view' ? 'Detalle Evento' : 'Editar Evento'}
@@ -244,7 +257,7 @@ export default function HomeScreen() {
               )}
             </View>
 
-            {/* WhatsApp justo debajo del título */}
+            {/* Switch Whatsapp */}
             <View style={styles.switchRow}>
               <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon} />
               <Text style={styles.switchLabel}>Envio por Whatsapp:</Text>
@@ -257,12 +270,17 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Campos de texto */}
+            {/* Inputs texto */}
             {[
-              { icon: 'text-outline',    value: name,      setter: setName,      placeholder: 'Nombre del evento' },
-              { icon: 'calendar-number-outline', value: date, setter: setDate, placeholder: 'YYYY-MM-DD' },
-              { icon: 'trail-sign-outline',      value: address, setter: setAddress, placeholder: 'Dirección' },
-              { icon: 'location-outline',        value: mapUrl,   setter: setMapUrl,   placeholder: 'Mapa URL' },
+              { icon: 'text-outline', value: name, setter: setName, placeholder: 'Nombre del evento' },
+              {
+                icon: 'calendar-number-outline',
+                value: date,
+                setter: setDate,
+                placeholder: 'YYYY-MM-DD',
+              },
+              { icon: 'trail-sign-outline', value: address, setter: setAddress, placeholder: 'Dirección' },
+              { icon: 'location-outline', value: mapUrl, setter: setMapUrl, placeholder: 'Mapa URL' },
             ].map((f, i) => (
               <View key={i} style={styles.inputRow}>
                 <Ionicons name={f.icon} size={20} color="#FFF" style={styles.modalIcon} />
@@ -291,7 +309,7 @@ export default function HomeScreen() {
               />
             )}
 
-            {/* Gasto Total con $ y separador de miles */}
+            {/* Gasto Total */}
             <View style={styles.inputRow}>
               <Ionicons name="cash-outline" size={20} color="#FFF" style={styles.modalIcon} />
               <Text style={styles.dollarSign}>$</Text>
@@ -306,19 +324,137 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Participantes (no editable) */}
-            <View style={styles.inputRow}>
-              <Ionicons name="people-outline" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={[styles.modalInput, styles.centerText]}>{participants}</Text>
+            {/* Sección Participantes */}
+            <View style={styles.partHeader}>
+              {(() => {
+                const count = selectedId
+                  ? getParticipantsForEvent(selectedId).length
+                  : 0;
+                return (
+                  <Text style={styles.sectionTitle}>
+                    Participantes ({count})
+                  </Text>
+                );
+              })()}
+              <TouchableOpacity
+                onPress={() => setParticipantsCollapsed(!participantsCollapsed)}
+                style={styles.toggleListButton}
+              >
+                <Ionicons
+                  name={
+                    participantsCollapsed
+                      ? 'chevron-down-outline'
+                      : 'chevron-up-outline'
+                  }
+                  size={20}
+                  color="#FFF"
+                />
+              </TouchableOpacity>
+              {modalMode === 'edit' && (
+                <TouchableOpacity
+                  onPress={() => setShowAddList(true)}
+                  style={styles.addIconButton}
+                >
+                  <Ionicons name="person-add-outline" size={20} color="#00FF55" />
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* Por persona con $ y miles */}
-            <View style={styles.inputRow}>
-              <Ionicons name="calculator-outline" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={[styles.modalInput, { paddingVertical: 12 }]}>
-                ${Number(per).toLocaleString('en-US')}
-              </Text>
-            </View>
+            {!participantsCollapsed && (
+              <>
+                <TextInput
+                  placeholder="Buscar participante"
+                  placeholderTextColor="#AAA"
+                  value={addListSearch}
+                  onChangeText={setAddListSearch}
+                  style={styles.addListSearchInput}
+                />
+                <FlatList
+                  data={getParticipantsForEvent(selectedId).filter(p =>
+                    p.name.toLowerCase().includes(addListSearch.toLowerCase())
+                  )}
+                  keyExtractor={p => p.id}
+                  renderItem={({ item }) => (
+                    <View style={styles.partRow}>
+                      <Ionicons name="person-outline" size={20} color="#FFF" />
+                      <Text style={styles.partName}>{item.name}</Text>
+                      {modalMode === 'edit' && (
+                        <TouchableOpacity
+                          onPress={() => removeParticipantFromEvent(selectedId, item.id)}
+                          style={styles.partRemove}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={20}
+                            color="#FF6B6B"
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  style={{ maxHeight: 200 }}
+                />
+              </>
+            )}
+
+            {/* Mini-modal Agregar Participante */}
+            {showAddList && (
+              <Modal transparent animationType="slide">
+                <View
+                  style={[
+                    styles.addListOverlay,
+                    { backgroundColor: 'rgba(0,0,0,0.8)' },
+                  ]}
+                >
+                  <Text style={styles.addListTitle}>Participantes</Text>
+                  <TextInput
+                    placeholder="Buscar participante"
+                    placeholderTextColor="#AAA"
+                    value={addListSearch}
+                    onChangeText={setAddListSearch}
+                    style={styles.addListSearchInput}
+                  />
+                  <FlatList
+                    data={allParticipants
+                      .filter(
+                        p =>
+                          !getParticipantsForEvent(selectedId).some(
+                            x => x.id === p.id
+                          )
+                      )
+                      .filter(p =>
+                        p.name
+                          .toLowerCase()
+                          .includes(addListSearch.toLowerCase())
+                      )}
+                    keyExtractor={p => p.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.partRow}
+                        onPress={() => {
+                          addParticipantToEvent(selectedId, item.id);
+                          setShowAddList(false);
+                        }}
+                      >
+                        <Ionicons
+                          name="person-outline"
+                          size={20}
+                          color="#FFF"
+                        />
+                        <Text style={styles.partName}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                    style={{ maxHeight: 250 }}
+                  />
+                  <TouchableOpacity
+                    style={styles.addListClose}
+                    onPress={() => setShowAddList(false)}
+                  >
+                    <Text style={styles.addListCloseText}>Cerrar</Text>
+                  </TouchableOpacity>
+                </View>
+              </Modal>
+            )}
 
             {/* Footer */}
             <View style={styles.modalFooter}>
@@ -329,12 +465,14 @@ export default function HomeScreen() {
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
               {modalMode !== 'view' && (
-                <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleSave}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary]}
+                  onPress={handleSave}
+                >
                   <Text style={styles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
               )}
             </View>
-
           </View>
         </View>
       </Modal>
@@ -342,50 +480,145 @@ export default function HomeScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
-  container:         { flex: 1, backgroundColor: '#0A0E1A' },
-  header:            { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2230' },
-  searchInput:       { flex: 1, backgroundColor: '#0F1120', borderRadius: 12, paddingHorizontal: 12, color: '#FFF', fontSize: 16 },
-  filterButton:      { marginLeft: 12, padding: 4 },
-  avatar:            { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#00FF55' },
-  card:              { backgroundColor: '#1F2230', borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
-  cardContent:       { flexDirection: 'row', alignItems: 'center', padding: 12 },
-  eventIcon:         { marginRight: 12 },
-  eventInfo:         { flex: 2 },
-  eventName:         { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  eventDate:         { color: '#AAA', fontSize: 14, marginTop: 4 },
-  eventAddress:      { color: '#AAA', fontSize: 14, marginTop: 4 },
-  eventParticipants: { color: '#AAA', fontSize: 14, marginTop: 4 },
-  amounts:           { alignItems: 'flex-end', marginRight: 12 },
-  amountText:        { color: '#00FF55', fontWeight: 'bold' },
-  amountSub:         { color: '#AAA', fontSize: 12, marginTop: 2 },
-  actions:           { flexDirection: 'row', justifyContent: 'flex-end', padding: 8, backgroundColor: '#0F1120' },
-  actionButton:      { marginLeft: 16 },
+  /* Pantalla principal */
+  container: { flex: 1, backgroundColor: '#0A0E1A' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#1F2230',
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#0F1120',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    color: '#FFF',
+    fontSize: 16,
+  },
+  filterButton: { marginLeft: 12, padding: 4 },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#00FF55',
+  },
+  card: {
+    backgroundColor: '#1F2230',
+    borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  eventIcon: { marginRight: 12 },
+  eventInfo: { flex: 2 },
+  eventName: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  eventDate: { color: '#AAA', fontSize: 14, marginTop: 4 },
+  eventAddress: { color: '#AAA', fontSize: 14, marginTop: 4 },
+  amounts: { alignItems: 'flex-end', marginRight: 12 },
+  amountText: { color: '#00FF55', fontWeight: 'bold' },
+  amountSub: { color: '#AAA', fontSize: 12, marginTop: 2 },
+  participantsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  eventParticipantsCount: { color: '#AAA', fontSize: 14, marginLeft: 4 },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 8,
+    backgroundColor: '#0F1120',
+  },
+  actionButton: { marginLeft: 16 },
 
-  /* modal */
-  modalOverlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  modalContent:      { width: '90%', backgroundColor: '#1F2230', borderRadius: 12, padding: 16 },
-  modalHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle:        { fontSize: 20, color: '#FFF', fontWeight: 'bold' },
-  modalEditLink:     { color: '#00FF55', fontSize: 16, textDecorationLine: 'underline' },
-  inputRow:          { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  switchRow:         { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  modalIcon:         { marginRight: 12 },
-  modalInput:        { flex: 1, backgroundColor: '#0F1120', borderRadius: 8, paddingHorizontal: 12, color: '#FFF' },
-  calIcon:           { marginLeft: 8 },
-  
-  footer:            { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
-  button:            { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  buttonPrimary:     { backgroundColor: '#00FF55', marginLeft: 8 },
-  buttonDisabled:    { backgroundColor: '#696969', marginRight: 8 },
-  buttonText:        { color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
-  modalFooter:       { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
-  switchRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  modalIcon:       { marginRight: 12 },
-  switchLabel:     { flex: 1, color: '#FFF', fontSize: 16 },
-  dollarSign:      { color: '#FFF', fontSize: 16, marginRight: 4 },
-  centerText:      { textAlign: 'center', color: '#FFF', fontSize: 16, flex: 1 },
-  participantsRow: {    flexDirection: 'row',    alignItems: 'center',    marginTop: 4,  },
-  eventParticipantsCount: {    color: '#AAA',    fontSize: 14,    marginLeft: 4,  },
+  /* Modal principal */
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#1F2230',
+    borderRadius: 12,
+    padding: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: { fontSize: 20, color: '#FFF', fontWeight: 'bold' },
+  modalEditLink: {
+    color: '#00FF55',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+
+  /* Switch Whatsapp */
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  modalIcon: { marginRight: 12 },
+  switchLabel: { flex: 1, color: '#FFF', fontSize: 16 },
+
+  /* Inputs */
+  inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  modalInput: {
+    flex: 1,
+    backgroundColor: '#0F1120',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    color: '#FFF',
+  },
+  calIcon: { marginLeft: 8 },
+  dollarSign: { color: '#FFF', fontSize: 16, marginRight: 4 },
+
+  /* Sección Participantes */
+  partHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  sectionTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  toggleListButton: { padding: 4 },
+  addIconButton: { padding: 4, marginLeft: 8 },
+  addListSearchInput: {
+    backgroundColor: '#0F1120',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#FFF',
+    marginVertical: 8,
+  },
+
+  partRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  partName: { color: '#FFF', marginLeft: 8, flex: 1 },
+  partRemove: { padding: 4 },
+
+  /* Mini-modal Agregar Participante */
+  addListOverlay: { flex: 1, justifyContent: 'center', padding: 16 },
+  addListTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  addListClose: {
+    backgroundColor: '#696969',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  addListCloseText: { color: '#FFF', fontWeight: 'bold' },
+
+  /* Footer modal */
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  button: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  buttonPrimary: { backgroundColor: '#00FF55', marginLeft: 8 },
+  buttonDisabled: { backgroundColor: '#696969', marginRight: 8 },
+  buttonText: { color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
 });
