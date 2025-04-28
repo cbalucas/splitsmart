@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   searchInput:           { flex: 1, backgroundColor: '#0F1120', borderRadius: 12, paddingHorizontal: 12, color: '#FFF', fontSize: 16 },
   primaryButton:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#00FF55', margin: 16, borderRadius: 12, paddingVertical: 14 },
   primaryButtonText:     { marginLeft: 8, color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
-  primaryButtonDisabled: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2A2D3F', margin: 16, borderRadius: 12, paddingVertical: 14 },
+  primaryButtonDisabled: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#696969', margin: 16, borderRadius: 12, paddingVertical: 14 },
   card:                  { backgroundColor: '#1F2230', borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
   cardContent:           { flexDirection: 'row', alignItems: 'center', padding: 12 },
   eventIcon:             { marginRight: 12 },
