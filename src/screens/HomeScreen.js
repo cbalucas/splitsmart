@@ -57,6 +57,9 @@ export default function HomeScreen() {
   const [total, setTotal] = useState('');
   const [per, setPer] = useState('0.00');
 
+  // Estado para saber si el evento está abierto o cerrado
+  const [estadoEvento, setEstadoEvento] = useState(true);
+
   // “Ayer” para filtros de fecha
   const today = new Date();
   const yesterday = new Date(today);
@@ -77,18 +80,22 @@ export default function HomeScreen() {
   // Abre modal en modo ver
   const openViewModal = (item) => {
     setModalMode('view');
-    setSelectedId(item.id);
-    setName(item.name);
-    setDate(item.date);
-    setAddress(item.address || '');
-    setMapUrl(item.map || '');
-    setWhatsappEnvio(item.whatsappEnvio);
-    setTotal((item.total ?? '').toString());
-    const cnt = getParticipantsForEvent(item.id).length;
-    const initialPer = item.per != null ? item.per : (item.total ?? 0) / (cnt || 1);
-    setPer(initialPer.toFixed(2));
-    setModalVisible(true);
-    setParticipantsCollapsed(true);
+  setSelectedId(item.id);
+  setName(item.name);
+  setDate(item.date);
+  setAddress(item.address || '');
+  setMapUrl(item.map || '');
+  setWhatsappEnvio(item.whatsappEnvio);
+  setTotal((item.total ?? '').toString());
+  // <-- Añade esto:
+  setEstadoEvento(item.estadoEvento);
+  const cnt = getParticipantsForEvent(item.id).length;
+  const initialPer = item.per != null
+    ? item.per
+    : (item.total ?? 0) / (cnt || 1);
+  setPer(initialPer.toFixed(2));
+  setModalVisible(true);
+  setParticipantsCollapsed(true);
   };
   // Pasa a modo editar
   const openEditModal = (item) => {
@@ -243,11 +250,11 @@ export default function HomeScreen() {
               <Text style={styles.modalTitle}>
                 {modalMode === 'view' ? 'Detalle Evento' : 'Editar Evento'}
               </Text>
-              {modalMode === 'view' && (
-                <TouchableOpacity onPress={() => setModalMode('edit')}>
-                  <Text style={styles.modalEditLink}>Editar</Text>
-                </TouchableOpacity>
-              )}
+              {modalMode === 'view' && estadoEvento && (
+   <TouchableOpacity onPress={() => setModalMode('edit')}>
+     <Text style={styles.modalEditLink}>Editar</Text>
+   </TouchableOpacity>
+ )}
             </View>
 
             {/* Switch WhatsApp */}
