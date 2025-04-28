@@ -1,95 +1,156 @@
-// SplitSmart/src/screens/HomeScreen.js
-import React, { useState } from 'react';
+// src/screens/HomeScreen.js
+import React, { useState, useContext } from 'react';
 import {
+  SafeAreaView,
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   FlatList,
   StyleSheet,
   Image,
-  SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 const sampleEvents = [
-  {
-    id: '1',
-    name: 'Cumpleaños Ana',
-    date: '2025-05-10',
-    total: 2500,
-    per: 500,
-    participants: 5,
-    icon: require('../assets/event-icon.png'),
-  },
-  {
-    id: '2',
-    name: 'Asado con amigos',
-    date: '2025-04-29',
-    total: 1800,
-    per: 300,
-    participants: 6,
-    icon: require('../assets/event-icon.png'),
-  },
-  // puedes añadir más eventos de ejemplo aquí
+  { id: '1', name: 'Cumpleaños Ana',    date: '2025-05-10', total: 2500,    per: 500,   participants: 5, estadoEvento: true,  whatsappEnvio: true,  icon: require('../assets/event-icon.png') },
+  { id: '2', name: 'Asado con amigos',   date: '2025-04-29', total: 1800,    per: 300,   participants: 6, estadoEvento: true,  whatsappEnvio: false, icon: require('../assets/event-icon.png') },
+  { id: '3', name: 'Vieja Mendoza',      date: '2025-04-10', total: 250000,  per: 50000, participants: 5, estadoEvento: false, whatsappEnvio: false, icon: require('../assets/event-icon.png') },
+  { id: '4', name: 'Salida',             date: '2025-04-27', total: 15000,   per: 2142.85,participants: 7, estadoEvento: true,  whatsappEnvio: true,  icon: require('../assets/event-icon.png') },
+  { id: '5', name: 'Salida II',          date: '2025-04-26', total: 15000,   per: 2142.85,participants: 7, estadoEvento: true,  whatsappEnvio: false, icon: require('../assets/event-icon.png') },
+  { id: '6', name: 'Salida III',         date: '2025-04-25', total: 15000,   per: 2142.85,participants: 7, estadoEvento: true,  whatsappEnvio: true,  icon: require('../assets/event-icon.png') },
+  { id: '7', name: 'Salida IV',          date: '2025-04-28', total: 15000,   per: 2142.85,participants: 7, estadoEvento: true,  whatsappEnvio: false, icon: require('../assets/event-icon.png') },
 ];
 
 export default function HomeScreen() {
-  const { logout, user } = useContext(AuthContext);
-  const [search, setSearch] = useState('');
-  const [filteredEvents, setFilteredEvents] = useState(sampleEvents);
+  const { logout } = useContext(AuthContext);
 
-  // Filtrar por nombre
-  const handleSearch = (text) => {
-    setSearch(text);
-    const filtered = sampleEvents.filter((e) =>
-      e.name.toLowerCase().includes(text.toLowerCase())
+  // events in state so filters/reactivity work
+  const [events, setEvents] = useState(sampleEvents);
+  const [search, setSearch] = useState('');
+  const [filterStateActive, setFilterStateActive] = useState(false);
+  const [filterDateActive, setFilterDateActive] = useState(false);
+
+  // compute “yesterday” for date filters
+  const today     = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  // combined filtering: text / estado / fecha
+  const filtered = events.filter(e => {
+    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const matchesState  = !filterStateActive || e.estadoEvento;
+    const eventDate     = new Date(e.date);
+    const matchesDate   = !filterDateActive || eventDate >= yesterday;
+    return matchesSearch && matchesState && matchesDate;
+  });
+
+  // toggle estadoEvento to false
+  const closeEvent = (id) => {
+    setEvents(prev =>
+      prev.map(ev =>
+        ev.id === id ? { ...ev, estadoEvento: false } : ev
+      )
     );
-    setFilteredEvents(filtered);
   };
 
-  const renderEvent = ({ item }) => (
-    <View style={styles.eventCard}>
-      <Image source={item.icon} style={styles.eventIcon} />
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventName}>{item.name}</Text>
-        <Text style={styles.eventDate}>{item.date}</Text>
-        <Text style={styles.eventParticipants}>
-          Participantes: {item.participants}
-        </Text>
+  const renderEvent = ({ item }) => {
+    // date icon logic
+    const eventDate     = new Date(item.date);
+    const dateIconName  = eventDate >= yesterday ? 'today-outline' : 'calendar-outline';
+    const dateIconColor = eventDate >= yesterday ? '#00FF55'      : '#FF6B6B';
+
+    // whatsapp icon color
+    const whatsappColor = item.whatsappEnvio ? '#00FF55' : '#888';
+
+    // other actions
+    const viewColor    = '#4285F4';
+    const lockIconName = item.estadoEvento ? 'lock-open-outline'  : 'lock-closed-outline';
+    const lockColor    = item.estadoEvento ? '#00FF55'            : '#FF6B6B';
+    const editColor    = item.estadoEvento ? '#4285F4'            : '#888';
+
+    return (
+      <View style={styles.card}>
+        {/* event content */}
+        <View style={styles.cardContent}>
+          <Ionicons
+            name={dateIconName}
+            size={40}
+            color={dateIconColor}
+            style={styles.eventIcon}
+          />
+          <View style={styles.eventInfo}>
+            <Text style={styles.eventName}>{item.name}</Text>
+            <Text style={styles.eventDate}>{item.date}</Text>
+            <Text style={styles.eventParticipants}>
+              {item.participants} participantes
+            </Text>
+          </View>
+          <View style={styles.amounts}>
+            <Text style={styles.amountText}>${item.total}</Text>
+            <Text style={styles.amountSub}>por persona ${item.per}</Text>
+          </View>
+        </View>
+        {/* actions row */}
+        <View style={styles.actions}>
+         
+          <TouchableOpacity>
+            <Ionicons name="eye-outline" size={20} color={viewColor} />
+          </TouchableOpacity>
+          <View style={styles.actionButton}>
+            <Ionicons name="logo-whatsapp" size={20} color={whatsappColor} />
+          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => closeEvent(item.id)}
+          >
+            <Ionicons name={lockIconName} size={20} color={lockColor} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={!item.estadoEvento}
+            style={styles.actionButton}
+          >
+            <Ionicons name="create-outline" size={20} color={editColor} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.amounts}>
-        <Text>Total: ${item.total}</Text>
-        <Text>Por persona: ${item.per}</Text>
-      </View>
-      <View style={styles.actions}>
-        <TouchableOpacity>
-          <Ionicons name="create-outline" size={20} />
-        </TouchableOpacity>
-        <TouchableOpacity style={{ marginLeft: 12 }}>
-          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
+      {/* header with search + filters */}
       <View style={styles.header}>
         <TextInput
-          placeholder="Buscar"
+          placeholder="Buscar evento"
+          placeholderTextColor="#888"
           value={search}
-          onChangeText={handleSearch}
+          onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="options-outline" size={24} />
+        <TouchableOpacity
+          onPress={() => setFilterStateActive(!filterStateActive)}
+          style={styles.filterButton}
+        >
+          <Ionicons
+            name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'}
+            size={24}
+            color={filterStateActive ? '#00FF55' : '#FFF'}
+          />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
-          <Ionicons name="calendar-outline" size={24} />
+        <TouchableOpacity
+          onPress={() => setFilterDateActive(!filterDateActive)}
+          style={styles.filterButton}
+        >
+          <Ionicons
+            name={filterDateActive ? 'today-outline' : 'calendar-outline'}
+            size={24}
+            color={filterDateActive ? '#00FF55' : '#FFF'}
+          />
         </TouchableOpacity>
         <TouchableOpacity onPress={logout} style={{ marginLeft: 16 }}>
           <Image
@@ -99,66 +160,32 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* LISTADO DE EVENTOS */}
       <FlatList
-        data={filteredEvents}
-        keyExtractor={(item) => item.id}
+        data={filtered}
+        keyExtractor={item => item.id}
         renderItem={renderEvent}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
       />
-
-      {/* TAB BAR (si estás usando React Navigation Tabs, esto no es necesario) */}
-      {/* Si dejas la navegación por tabs, este bloque se ignora */}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderColor: '#EEEEEE',
-  },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-  },
-  iconButton: {
-    marginLeft: 12,
-  },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderColor: '#F0F0F0',
-  },
-  eventIcon: {
-    width: 40,
-    height: 40,
-    marginRight: 12,
-  },
-  eventInfo: { flex: 2 },
-  eventName: { fontWeight: 'bold', marginBottom: 4 },
-  eventDate: { color: '#777777' },
-  eventParticipants: { color: '#777777', marginTop: 4 },
-  amounts: {
-    alignItems: 'flex-end',
-    marginRight: 12,
-  },
-  actions: {
-    flexDirection: 'row',
-  },
+  container:           { flex: 1, backgroundColor: '#0A0E1A' },
+  header:              { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2230' },
+  searchInput:         { flex: 1, backgroundColor: '#0F1120', borderRadius: 12, paddingHorizontal: 12, color: '#FFF', fontSize: 16 },
+  filterButton:        { marginLeft: 12, padding: 4 },
+  avatar:              { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#00FF55' },
+  card:                { backgroundColor: '#1F2230', borderRadius: 12, marginBottom: 12, overflow: 'hidden' },
+  cardContent:         { flexDirection: 'row', alignItems: 'center', padding: 12 },
+  eventIcon:           { marginRight: 12 },
+  eventInfo:           { flex: 2 },
+  eventName:           { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+  eventDate:           { color: '#AAA', fontSize: 14, marginTop: 4 },
+  eventParticipants:   { color: '#AAA', fontSize: 14, marginTop: 4 },
+  amounts:             { alignItems: 'flex-end', marginRight: 12 },
+  amountText:          { color: '#00FF55', fontWeight: 'bold' },
+  amountSub:           { color: '#AAA', fontSize: 12, marginTop: 2 },
+  actions:             { flexDirection: 'row', justifyContent: 'flex-end', padding: 8, backgroundColor: '#0F1120' },
+  actionButton:        { marginLeft: 16 },
 });
