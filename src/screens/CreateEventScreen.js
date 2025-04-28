@@ -180,6 +180,16 @@ export default function CreateEventScreen({ navigation }) {
             keyboardType="decimal-pad"
           />
         </View>
+        {/* Gasto por persona */}
+        <View style={styles.inputRow}>
+          <Ionicons
+            name="calculator-outline"
+            size={20}
+            color="#FFF"
+            style={styles.icon}
+          />
+          <Text style={styles.input}>${per}</Text>
+        </View>
 
         {/* Sección Participantes */}
         <View style={styles.partHeader}>
@@ -259,6 +269,8 @@ export default function CreateEventScreen({ navigation }) {
             />
           </>
         )}
+        
+        
 
         {/* Sub-modal Agregar Participante */}
         <Modal
@@ -326,16 +338,6 @@ export default function CreateEventScreen({ navigation }) {
           </View>
         </Modal>
 
-        {/* Gasto por persona */}
-        <View style={styles.inputRow}>
-          <Ionicons
-            name="calculator-outline"
-            size={20}
-            color="#FFF"
-            style={styles.icon}
-          />
-          <Text style={styles.input}>${per}</Text>
-        </View>
 
         {/* Botones Cancelar / Guardar */}
         <View style={styles.footer}>
