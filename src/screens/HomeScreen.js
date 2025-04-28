@@ -30,8 +30,9 @@ export default function HomeScreen() {
   // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
+
+  // Event fields
   const [selectedId, setSelectedId] = useState(null);
-  // event fields
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -41,9 +42,8 @@ export default function HomeScreen() {
   const [total, setTotal] = useState('');
   const [participants, setParticipants] = useState(0);
   const [per, setPer] = useState('0.00');
-  const [estadoEvento, setEstadoEvento] = useState(true);
 
-  // compute “yesterday”
+  // compute yesterday
   const today     = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
@@ -57,7 +57,6 @@ export default function HomeScreen() {
     return matchesSearch && matchesState && matchesDate;
   });
 
-  // update eventoActivo via context
   const closeEvent = id => updateEvent(id, { estadoEvento: false });
 
   // open modals
@@ -72,7 +71,6 @@ export default function HomeScreen() {
     setTotal(item.total?.toString() || '');
     setParticipants(item.participants || 0);
     setPer(item.per?.toFixed(2) || '0.00');
-    setEstadoEvento(item.estadoEvento);
     setModalVisible(true);
   };
   const openEditModal = item => {
@@ -80,23 +78,21 @@ export default function HomeScreen() {
     setModalMode('edit');
   };
 
-  // handle date picker
-  const handleDateChange = (e, selected) => {
+  // date picker
+  const handleDateChange = (_, sel) => {
     setShowDatePicker(false);
-    if (selected) {
-      const iso = selected.toISOString().split('T')[0];
-      setDate(iso);
+    if (sel) {
+      setDate(sel.toISOString().split('T')[0]);
     }
   };
 
   // recalc per
   React.useEffect(() => {
     const t = parseFloat(total) || 0;
-    const p = participants || 0;
+    const p = participants;
     setPer(p > 0 ? (t / p).toFixed(2) : '0.00');
   }, [total, participants]);
 
-  // save edits
   const handleSave = () => {
     updateEvent(selectedId, {
       name,
@@ -107,7 +103,6 @@ export default function HomeScreen() {
       total: parseFloat(total) || 0,
       per: parseFloat(per) || 0,
       participants,
-      estadoEvento
     });
     setModalVisible(false);
   };
@@ -133,10 +128,32 @@ export default function HomeScreen() {
             {item.address ? <Text style={styles.eventAddress}>{item.address}</Text> : null}
           </View>
           <View style={styles.amounts}>
-            <Text style={styles.amountText}>${item.total}</Text>
-            <Text style={styles.amountSub}>por persona ${item.per}</Text>
-            <Text style={styles.eventParticipants}>{item.participants} participantes</Text>
-          </View>
+   {/*
+     Formateamos con separadores de miles
+   */}
+   {(() => {
+     const fmtTotal = Number(item.total).toLocaleString();
+     return <Text style={styles.amountText}>${fmtTotal}</Text>;
+   })()}
+
+   {/*
+     “c/u” en lugar de “por persona”
+   */}
+   {(() => {
+     const fmtPer = Number(item.per).toLocaleString();
+     return <Text style={styles.amountSub}>c/u ${fmtPer}</Text>;
+   })()}
+
+   {/*
+     Icono + número de participantes
+   */}
+   <View style={styles.participantsRow}>
+     <Ionicons name="people-outline" size={16} color="#AAA" />
+     <Text style={styles.eventParticipantsCount}>
+       {item.participants}
+     </Text>
+   </View>
+ </View>
         </View>
 
         <View style={styles.actions}>
@@ -205,10 +222,16 @@ export default function HomeScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
       />
 
-      {/* Modal para ver/editar evento */}
-      <Modal transparent visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+       {/* Modal ver/editar */}
+       <Modal
+        transparent
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+
             {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -221,12 +244,25 @@ export default function HomeScreen() {
               )}
             </View>
 
-            {/* Campos */}
+            {/* WhatsApp justo debajo del título */}
+            <View style={styles.switchRow}>
+              <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon} />
+              <Text style={styles.switchLabel}>Envio por Whatsapp:</Text>
+              <Switch
+                value={whatsappEnvio}
+                onValueChange={setWhatsappEnvio}
+                disabled={modalMode === 'view'}
+                thumbColor={whatsappEnvio ? '#00FF55' : '#FFF'}
+                trackColor={{ true: '#55FF88', false: '#333' }}
+              />
+            </View>
+
+            {/* Campos de texto */}
             {[
-              { icon: 'text-outline',       value: name,      setter: setName,         placeholder: 'Nombre del evento', editable: modalMode !== 'view' },
-              { icon: 'calendar-number-outline', value: date, setter: setDate,      placeholder: 'YYYY-MM-DD', editable: modalMode !== 'view' },
-              { icon: 'trail-sign-outline',  value: address,   setter: setAddress,      placeholder: 'Dirección', editable: modalMode !== 'view' },
-              { icon: 'location-outline',    value: mapUrl,    setter: setMapUrl,       placeholder: 'Mapa URL', editable: modalMode !== 'view' },
+              { icon: 'text-outline',    value: name,      setter: setName,      placeholder: 'Nombre del evento' },
+              { icon: 'calendar-number-outline', value: date, setter: setDate, placeholder: 'YYYY-MM-DD' },
+              { icon: 'trail-sign-outline',      value: address, setter: setAddress, placeholder: 'Dirección' },
+              { icon: 'location-outline',        value: mapUrl,   setter: setMapUrl,   placeholder: 'Mapa URL' },
             ].map((f, i) => (
               <View key={i} style={styles.inputRow}>
                 <Ionicons name={f.icon} size={20} color="#FFF" style={styles.modalIcon} />
@@ -236,7 +272,7 @@ export default function HomeScreen() {
                   style={styles.modalInput}
                   value={f.value}
                   onChangeText={f.setter}
-                  editable={f.editable}
+                  editable={modalMode !== 'view'}
                 />
                 {f.placeholder === 'YYYY-MM-DD' && modalMode !== 'view' && (
                   <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.calIcon}>
@@ -246,7 +282,6 @@ export default function HomeScreen() {
               </View>
             ))}
 
-            {/* DateTimePicker */}
             {showDatePicker && (
               <DateTimePicker
                 value={date ? new Date(date) : new Date()}
@@ -256,15 +291,10 @@ export default function HomeScreen() {
               />
             )}
 
-            {/* booleanos y números */}
-            <View style={styles.switchRow}>
-              <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={styles.switchLabel}>WhatsApp:</Text>
-              <Switch value={whatsappEnvio} onValueChange={setWhatsappEnvio} disabled={modalMode==='view'} thumbColor={whatsappEnvio?'#00FF55':'#FFF'} trackColor={{true:'#55FF88',false:'#333'}} />
-            </View>
-
+            {/* Gasto Total con $ y separador de miles */}
             <View style={styles.inputRow}>
               <Ionicons name="cash-outline" size={20} color="#FFF" style={styles.modalIcon} />
+              <Text style={styles.dollarSign}>$</Text>
               <RNTextInput
                 placeholder="Gasto Total"
                 placeholderTextColor="#AAA"
@@ -272,63 +302,46 @@ export default function HomeScreen() {
                 value={total}
                 onChangeText={setTotal}
                 keyboardType="decimal-pad"
-                editable={modalMode!=='view'}
+                editable={modalMode !== 'view'}
               />
             </View>
 
+            {/* Participantes (no editable) */}
             <View style={styles.inputRow}>
               <Ionicons name="people-outline" size={20} color="#FFF" style={styles.modalIcon} />
-              <RNTextInput
-                placeholder="Participantes"
-                style={[styles.modalInput, { textAlign: 'center' }]}
-                value={participants.toString()}
-                editable={false}
-              />
-              {modalMode!=='view' && (
-                <>
-                  <TouchableOpacity onPress={()=>setParticipants(n=>Math.max(0,n-1))}>
-                    <Ionicons name="remove-circle-outline" size={24} color="#FF6B6B" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={()=>setParticipants(n=>n+1)}>
-                    <Ionicons name="add-circle-outline" size={24} color="#00FF55" />
-                  </TouchableOpacity>
-                </>
-              )}
+              <Text style={[styles.modalInput, styles.centerText]}>{participants}</Text>
             </View>
 
+            {/* Por persona con $ y miles */}
             <View style={styles.inputRow}>
               <Ionicons name="calculator-outline" size={20} color="#FFF" style={styles.modalIcon} />
               <Text style={[styles.modalInput, { paddingVertical: 12 }]}>
-                ${per}
+                ${Number(per).toLocaleString('en-US')}
               </Text>
             </View>
 
-            <View style={styles.switchRow}>
-              <Ionicons name="lock-open-outline" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={styles.switchLabel}>Activo:</Text>
-              <Switch value={estadoEvento} onValueChange={setEstadoEvento} disabled={modalMode==='view'} thumbColor={estadoEvento?'#00FF55':'#FFF'} trackColor={{true:'#55FF88',false:'#333'}} />
-            </View>
-
-            {/* footer */}
+            {/* Footer */}
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={[styles.button, styles.buttonDisabled]}
-                onPress={()=>setModalVisible(false)}
+                onPress={() => setModalVisible(false)}
               >
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
-              {modalMode!=='view' && (
+              {modalMode !== 'view' && (
                 <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleSave}>
                   <Text style={styles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
               )}
             </View>
+
           </View>
         </View>
       </Modal>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container:         { flex: 1, backgroundColor: '#0A0E1A' },
@@ -361,11 +374,18 @@ const styles = StyleSheet.create({
   modalIcon:         { marginRight: 12 },
   modalInput:        { flex: 1, backgroundColor: '#0F1120', borderRadius: 8, paddingHorizontal: 12, color: '#FFF' },
   calIcon:           { marginLeft: 8 },
-  switchLabel:       { flex: 1, color: '#FFF', fontSize: 16 },
+  
   footer:            { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
   button:            { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   buttonPrimary:     { backgroundColor: '#00FF55', marginLeft: 8 },
   buttonDisabled:    { backgroundColor: '#696969', marginRight: 8 },
   buttonText:        { color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
   modalFooter:       { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
+  switchRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  modalIcon:       { marginRight: 12 },
+  switchLabel:     { flex: 1, color: '#FFF', fontSize: 16 },
+  dollarSign:      { color: '#FFF', fontSize: 16, marginRight: 4 },
+  centerText:      { textAlign: 'center', color: '#FFF', fontSize: 16, flex: 1 },
+  participantsRow: {    flexDirection: 'row',    alignItems: 'center',    marginTop: 4,  },
+  eventParticipantsCount: {    color: '#AAA',    fontSize: 14,    marginLeft: 4,  },
 });
