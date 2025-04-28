@@ -25,7 +25,7 @@ export default function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Crear' }} />
+      <Tab.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Nuevo Evento' }} />
       <Tab.Screen name="Participants" component={ParticipantsScreen} options={{ title: 'Participantes' }} />
     </Tab.Navigator>
   );
