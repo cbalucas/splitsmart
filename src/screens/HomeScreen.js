@@ -1,5 +1,6 @@
 // src/screens/HomeScreen.js
 import React, { useState, useContext, useEffect } from 'react';
+import { useRoute } from '@react-navigation/native';
 import {
   SafeAreaView,
   View,
@@ -18,6 +19,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { EventContext } from '../context/EventContext';
+import { useNavigation } from '@react-navigation/native';
+
 
 export default function HomeScreen() {
   const { logout } = useContext(AuthContext);
@@ -29,6 +32,16 @@ export default function HomeScreen() {
     removeParticipantFromEvent,
     participants: allParticipants,
   } = useContext(EventContext);
+  const navigation = useNavigation();
+
+  const route = useRoute();
+  const { openEventId } = route.params || {};
+  useEffect(() => {
+    if (openEventId) {
+      const evt = events.find(e => e.id === openEventId);
+      if (evt) openViewModal(evt);
+    }
+  }, [openEventId, events]);
 
   // Búsqueda y filtros
   const [search, setSearch] = useState('');
@@ -247,6 +260,18 @@ export default function HomeScreen() {
           <View style={styles.modalContent}>
             {/* Header del modal */}
             <View style={styles.modalHeader}>
+{/* Botón para ver/crear Gastos */}
+ <TouchableOpacity
+   style={styles.gastosButton}
+   onPress={() => {
+     setModalVisible(false);
+     navigation.navigate('CreateExpense', { eventId: selectedId });
+   }}
+ >
+  <Ionicons name="receipt-outline" size={20} color="#00FF55" />
+  <Text style={styles.gastosButtonText}>Gastos</Text>
+</TouchableOpacity>
+
               <Text style={styles.modalTitle}>
                 {modalMode === 'view' ? 'Detalle Evento' : 'Editar Evento'}
               </Text>
@@ -504,4 +529,8 @@ const styles = StyleSheet.create({
   buttonPrimary: { backgroundColor: '#00FF55', marginLeft: 8 },
   buttonDisabled: { backgroundColor: '#696969', marginRight: 8 },
   buttonText: { color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
+
+  gastosButton: { flexDirection: 'row',    alignItems: 'center',    marginBottom: 12,  },
+  gastosButtonText: {    color: '#FFF',    marginLeft: 8,    fontSize: 16,    fontWeight: 'bold',  },
+  
 });

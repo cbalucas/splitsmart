@@ -1,9 +1,11 @@
+// src/context/EventContext.js
 import React, { createContext, useState } from 'react';
 import {
   sampleEvents,
   sampleParticipants,
   sampleEventsParticipants,
-} from '../data/sampleData';
+  sampleGastos,
+} from '../data/sampleData'
 
 export const EventContext = createContext();
 
@@ -11,6 +13,7 @@ export function EventProvider({ children }) {
   const [events, setEvents] = useState(sampleEvents);
   const [participants] = useState(sampleParticipants);
   const [relations, setRelations] = useState(sampleEventsParticipants);
+  const [gastos, setGastos] = useState(sampleGastos);
 
   // 1) Añade un nuevo evento y sus relaciones
   const addEvent = (e) => {
@@ -93,6 +96,41 @@ export function EventProvider({ children }) {
     });
   };
 
+  // —————————— Gestión de Gastos ——————————
+
+  // 1) Añade un gasto
+  const addGasto = (g) => {
+    const newId = (gastos.length + 1).toString();
+    const gasto = {
+      id: newId,
+      descripcion: g.descripcion,
+      monto: g.monto,
+      date: g.date,
+      eventsParticipantsId: g.eventsParticipantsId,
+    };
+    setGastos((prev) => [...prev, gasto]);
+  };
+
+  // 2) Actualiza un gasto
+  const updateGasto = (id, upd) => {
+    setGastos((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, ...upd } : x))
+    );
+  };
+
+  // 3) Elimina un gasto
+  const removeGasto = (id) => {
+    setGastos((prev) => prev.filter((x) => x.id !== id));
+  };
+
+  // 4) Obtiene todos los gastos de un evento (a través de sus relations)
+  const getGastosForEvent = (eventId) => {
+    const relIds = relations
+      .filter((r) => r.eventsId === eventId)
+      .map((r) => r.id);
+    return gastos.filter((g) => relIds.includes(g.eventsParticipantsId));
+  };
+
   return (
     <EventContext.Provider
       value={{
@@ -100,9 +138,17 @@ export function EventProvider({ children }) {
         addEvent,
         updateEvent,
         participants,
+        relations,
         getParticipantsForEvent,
         addParticipantToEvent,
         removeParticipantFromEvent,
+
+        // Nuevo
+        gastos,
+        addGasto,
+        updateGasto,
+        removeGasto,
+        getGastosForEvent,
       }}
     >
       {children}

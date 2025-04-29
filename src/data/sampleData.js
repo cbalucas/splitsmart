@@ -34,9 +34,9 @@ export const sampleEvents = [
 
   export const sampleGastos = [
     { id: '1', descripcion: 'Carne',  monto:'50000',eventsParticipantsId: '4',  date: '2025-04-10' },
-    { id: '2', participantsId: 'Picada',  monto:'35200',eventsParticipantsId: '4',  date: '2025-04-10' },
-    { id: '3', participantsId: 'Bebida',  monto:'25752.50',eventsParticipantsId: '1',  date: '2025-04-10' },
-    { id: '4', participantsId: 'Bebida',  monto:'25752.50',eventsParticipantsId: '2',  date: '2025-04-10' },
-    { id: '5', participantsId: 'Bebida',  monto:'25752.50',eventsParticipantsId: '3',  date: '2025-04-10' },
+    { id: '2', descripcion: 'Picada',  monto:'35200',eventsParticipantsId: '8',  date: '2025-04-10' },
+    { id: '3', descripcion: 'Bebida',  monto:'25752.50',eventsParticipantsId: '1',  date: '2025-04-10' },
+    { id: '4', descripcion: 'Bebida',  monto:'25752.50',eventsParticipantsId: '6',  date: '2025-04-10' },
+    { id: '5', descripcion: 'Bebida',  monto:'25752.50',eventsParticipantsId: '3',  date: '2025-04-10' },
     // … más participantes …
   ];
