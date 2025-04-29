@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.14">
   <diagram name="Página-1" id="X9LQhpLwk_J4k-DrzsR-">
-    <mxGraphModel dx="872" dy="439" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1106" dy="571" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -185,7 +185,7 @@
         </mxCell>
         <object label="Pago_Gasto" id="S2vk2JNNVP6QqmYASaXY-1">
           <mxCell style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-            <mxGeometry x="240" y="410" width="250" height="154" as="geometry" />
+            <mxGeometry x="430" y="640" width="250" height="154" as="geometry" />
           </mxCell>
         </object>
         <mxCell id="S2vk2JNNVP6QqmYASaXY-2" value="&lt;font style=&quot;font-size: 10px;&quot;&gt;+ id:&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;font-size: 10px;&quot;&gt;number (Auto) (PK)&lt;/span&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" parent="S2vk2JNNVP6QqmYASaXY-1" vertex="1">
