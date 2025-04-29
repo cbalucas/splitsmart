@@ -18,9 +18,7 @@ import { EventContext } from '../context/EventContext';
 
 export default function CreateEventScreen({ navigation }) {
   const { logout } = useContext(AuthContext);
-  const { addEvent, participants: allParticipants } = useContext(
-    EventContext
-  );
+  const { addEvent, participants: allParticipants } = useContext(EventContext);
 
   // Campos del formulario
   const [name, setName] = useState('');
@@ -32,19 +30,15 @@ export default function CreateEventScreen({ navigation }) {
   const [per, setPer] = useState('0.00');
 
   // Participantes
-  const [selectedParticipants, setSelectedParticipants] = useState(
-    []
-  );
-  const [participantsCollapsed, setParticipantsCollapsed] = useState(
-    true
-  );
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [participantsCollapsed, setParticipantsCollapsed] = useState(true);
   const [showAddList, setShowAddList] = useState(false);
   const [addListSearch, setAddListSearch] = useState('');
 
-  // Selector de fecha
+  // DatePicker
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // recalcula c/u
+  // Recalcula “c/u”
   useEffect(() => {
     const t = parseFloat(total) || 0;
     const p = selectedParticipants.length;
@@ -57,7 +51,6 @@ export default function CreateEventScreen({ navigation }) {
   };
 
   const handleSave = () => {
-    // construye el objeto conforme espera EventContext.addEvent
     addEvent({
       name,
       date,
@@ -72,9 +65,32 @@ export default function CreateEventScreen({ navigation }) {
     navigation.goBack();
   };
 
+  const renderParticipant = ({ item }) => {
+    const p = allParticipants.find((x) => x.id === item);
+    return (
+      <View style={styles.partRow}>
+        <Ionicons name="person-outline" size={20} color="#FFF" />
+        <Text style={styles.partName}>{p?.name}</Text>
+        <TouchableOpacity
+          style={styles.partRemove}
+          onPress={() =>
+            setSelectedParticipants((prev) =>
+              prev.filter((pid) => pid !== item)
+            )
+          }
+        >
+          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16 }}
+        nestedScrollEnabled={true}
+      >
         <Text style={styles.pageTitle}>Nuevo Evento</Text>
 
         {/* WhatsApp */}
@@ -85,15 +101,11 @@ export default function CreateEventScreen({ navigation }) {
             color="#FFF"
             style={styles.icon}
           />
-          <Text style={styles.switchLabel}>
-            Envío por WhatsApp:
-          </Text>
+          <Text style={styles.switchLabel}>Envío por WhatsApp:</Text>
           <Switch
             value={whatsappEnvio}
             onValueChange={setWhatsappEnvio}
-            thumbColor={
-              whatsappEnvio ? '#00FF55' : '#FFF'
-            }
+            thumbColor={whatsappEnvio ? '#00FF55' : '#FFF'}
             trackColor={{ true: '#55FF88', false: '#333' }}
           />
         </View>
@@ -197,9 +209,7 @@ export default function CreateEventScreen({ navigation }) {
             Participantes ({selectedParticipants.length})
           </Text>
           <TouchableOpacity
-            onPress={() =>
-              setParticipantsCollapsed((v) => !v)
-            }
+            onPress={() => setParticipantsCollapsed((v) => !v)}
             style={styles.toggleListButton}
           >
             <Ionicons
@@ -224,120 +234,16 @@ export default function CreateEventScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Lista de participantes seleccionados */}
         {!participantsCollapsed && (
-          <>
-            <TextInput
-              placeholder="Buscar participante"
-              placeholderTextColor="#AAA"
-              value={addListSearch}
-              onChangeText={setAddListSearch}
-              style={styles.addListSearchInput}
-            />
-            <FlatList
-              data={selectedParticipants
-                .map((id) =>
-                  allParticipants.find((p) => p.id === id)
-                )
-                .filter(Boolean)}
-              keyExtractor={(p) => p.id}
-              renderItem={({ item }) => (
-                <View style={styles.partRow}>
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color="#FFF"
-                  />
-                  <Text style={styles.partName}>
-                    {item.name}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setSelectedParticipants((prev) =>
-                        prev.filter((pid) => pid !== item.id)
-                      )
-                    }
-                    style={styles.partRemove}
-                  >
-                    <Ionicons
-                      name="trash-outline"
-                      size={20}
-                      color="#FF6B6B"
-                    />
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          </>
+          <FlatList
+            data={selectedParticipants}
+            keyExtractor={(p) => p}
+            nestedScrollEnabled={true}
+            style={{ maxHeight: 150, marginBottom: 16 }}
+            renderItem={renderParticipant}
+          />
         )}
-        
-        
-
-        {/* Sub-modal Agregar Participante */}
-        <Modal
-          transparent
-          visible={showAddList}
-          animationType="slide"
-        >
-          <View
-            style={[
-              styles.addListOverlay,
-              { backgroundColor: 'rgba(0,0,0,0.8)' },
-            ]}
-          >
-            <Text style={styles.addListTitle}>
-              Participantes
-            </Text>
-            <TextInput
-              placeholder="Buscar participante"
-              placeholderTextColor="#AAA"
-              value={addListSearch}
-              onChangeText={setAddListSearch}
-              style={styles.addListSearchInput}
-            />
-            <FlatList
-              data={allParticipants
-                .filter(
-                  (p) =>
-                    !selectedParticipants.includes(p.id)
-                )
-                .filter((p) =>
-                  p.name
-                    .toLowerCase()
-                    .includes(addListSearch.toLowerCase())
-                )}
-              keyExtractor={(p) => p.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.partRow}
-                  onPress={() => {
-                    setSelectedParticipants((prev) => [
-                      ...prev,
-                      item.id,
-                    ]);
-                  }}
-                >
-                  <Ionicons
-                    name="person-outline"
-                    size={20}
-                    color="#FFF"
-                  />
-                  <Text style={styles.partName}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity
-              style={styles.addListClose}
-              onPress={() => setShowAddList(false)}
-            >
-              <Text style={styles.addListCloseText}>
-                Cerrar
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-
 
         {/* Botones Cancelar / Guardar */}
         <View style={styles.footer}>
@@ -354,42 +260,155 @@ export default function CreateEventScreen({ navigation }) {
             <Text style={styles.buttonText}>Guardar</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Modal Agregar Participante */}
+        {showAddList && (
+          <Modal transparent animationType="slide">
+            <View
+              style={[
+                styles.addListOverlay,
+                { backgroundColor: 'rgba(0,0,0,0.8)' },
+              ]}
+            >
+              <Text style={styles.addListTitle}>Participantes</Text>
+              <TextInput
+                placeholder="Buscar participante"
+                placeholderTextColor="#AAA"
+                value={addListSearch}
+                onChangeText={setAddListSearch}
+                style={styles.addListSearchInput}
+              />
+              <FlatList
+                data={allParticipants
+                  .filter((p) => !selectedParticipants.includes(p.id))
+                  .filter((p) =>
+                    p.name
+                      .toLowerCase()
+                      .includes(addListSearch.toLowerCase())
+                  )}
+                keyExtractor={(p) => p.id}
+                nestedScrollEnabled={true}
+                style={{ maxHeight: 250, marginBottom: 16 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.partRow}
+                    onPress={() => {
+                      setSelectedParticipants((prev) => [
+                        ...prev,
+                        item.id,
+                      ]);
+                      setAddListSearch('');
+                    }}
+                  >
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color="#FFF"
+                    />
+                    <Text style={styles.partName}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity
+                style={styles.addListClose}
+                onPress={() => setShowAddList(false)}
+              >
+                <Text style={styles.addListCloseText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-
-
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0A0E1A' },
-  pageTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFF', alignSelf: 'center', marginBottom: 16 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFF',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   icon: { marginRight: 12 },
-  input: { flex: 1, backgroundColor: '#1F2230', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, color: '#FFF' },
+  input: {
+    flex: 1,
+    backgroundColor: '#1F2230',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#FFF',
+  },
   switchLabel: { flex: 1, color: '#FFF', fontSize: 16 },
   calIcon: { marginLeft: 8 },
-  footer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
-  button: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  button: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
   buttonPrimary: { backgroundColor: '#00FF55', marginLeft: 8 },
   buttonDisabled: { backgroundColor: '#696969', marginRight: 8 },
   buttonText: { color: '#0A0E1A', fontSize: 16, fontWeight: 'bold' },
 
   /* Participantes */
-  partHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 8 },
+  partHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
   sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: 'bold', flex: 1 },
   toggleListButton: { padding: 4 },
   addIconButton: { padding: 4, marginLeft: 8 },
-  addListSearchInput: { backgroundColor: '#0F1120', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, color: '#FFF', marginBottom: 8 },
-  partRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  addListSearchInput: {
+    backgroundColor: '#0F1120',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#FFF',
+    marginBottom: 8,
+  },
+  partRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
   partName: { color: '#FFF', marginLeft: 8, flex: 1 },
   partRemove: { padding: 4 },
 
   /* Modal Agregar Participante */
   addListOverlay: { flex: 1, justifyContent: 'center', padding: 16 },
-  addListTitle: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  addListClose: { backgroundColor: '#696969', borderRadius: 12, padding: 12, marginTop: 8, alignItems: 'center' },
+  addListTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  addListClose: {
+    backgroundColor: '#696969',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    alignItems: 'center',
+  },
   addListCloseText: { color: '#FFF', fontWeight: 'bold' },
 });
