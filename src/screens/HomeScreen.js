@@ -1,6 +1,5 @@
 // src/screens/HomeScreen.js
 import React, { useState, useContext, useEffect } from 'react';
-import { useRoute } from '@react-navigation/native';
 import {
   SafeAreaView,
   View,
@@ -10,38 +9,26 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Linking,
   Modal,
   Switch,
   TextInput as RNTextInput,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AuthContext } from '../context/AuthContext';
-import { EventContext } from '../context/EventContext';
 import { useNavigation } from '@react-navigation/native';
 
+import { AuthContext } from '../context/AuthContext';
+import { EventContext } from '../context/EventContext';
+import { Linking } from 'react-native';
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
   const {
     events,
     updateEvent,
     getParticipantsForEvent,
-    addParticipantToEvent,
-    removeParticipantFromEvent,
-    participants: allParticipants,
   } = useContext(EventContext);
-  const navigation = useNavigation();
-
-  const route = useRoute();
-  const { openEventId } = route.params || {};
-  useEffect(() => {
-    if (openEventId) {
-      const evt = events.find(e => e.id === openEventId);
-      if (evt) openViewModal(evt);
-    }
-  }, [openEventId, events]);
 
   // Búsqueda y filtros
   const [search, setSearch] = useState('');
@@ -53,14 +40,12 @@ export default function HomeScreen() {
   const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Sub-modal seleccionar participantes
+  // Sub-modal de participantes
   const [showAddList, setShowAddList] = useState(false);
   const [addListSearch, setAddListSearch] = useState('');
-
-  // Sección participantes colapsada
   const [participantsCollapsed, setParticipantsCollapsed] = useState(true);
 
-  // Campos dentro del modal
+  // Campos del modal
   const [selectedId, setSelectedId] = useState(null);
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
@@ -69,8 +54,6 @@ export default function HomeScreen() {
   const [whatsappEnvio, setWhatsappEnvio] = useState(false);
   const [total, setTotal] = useState('');
   const [per, setPer] = useState('0.00');
-
-  // Estado para saber si el evento está abierto o cerrado
   const [estadoEvento, setEstadoEvento] = useState(true);
 
   // “Ayer” para filtros de fecha
@@ -78,8 +61,8 @@ export default function HomeScreen() {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // Aplica búsqueda + filtros
-  const filtered = events.filter((e) => {
+  // Filtro de eventos
+  const filtered = events.filter(e => {
     const mSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const mState = !filterStateActive || e.estadoEvento;
     const eDate = new Date(e.date);
@@ -88,41 +71,36 @@ export default function HomeScreen() {
   });
 
   // Cierra evento
-  const closeEvent = (id) => updateEvent(id, { estadoEvento: false });
+  const closeEvent = id => updateEvent(id, { estadoEvento: false });
 
-  // Abre modal en modo ver
-  const openViewModal = (item) => {
+  // Abre modal con datos del evento seleccionado
+  const openViewModal = item => {
     setModalMode('view');
-  setSelectedId(item.id);
-  setName(item.name);
-  setDate(item.date);
-  setAddress(item.address || '');
-  setMapUrl(item.map || '');
-  setWhatsappEnvio(item.whatsappEnvio);
-  setTotal((item.total ?? '').toString());
-  // <-- Añade esto:
-  setEstadoEvento(item.estadoEvento);
-  const cnt = getParticipantsForEvent(item.id).length;
-  const initialPer = item.per != null
-    ? item.per
-    : (item.total ?? 0) / (cnt || 1);
-  setPer(initialPer.toFixed(2));
-  setModalVisible(true);
-  setParticipantsCollapsed(true);
+    setSelectedId(item.id);
+    setName(item.name);
+    setDate(item.date);
+    setAddress(item.address || '');
+    setMapUrl(item.map || '');
+    setWhatsappEnvio(item.whatsappEnvio);
+    setTotal((item.total ?? '').toString());
+    setEstadoEvento(item.estadoEvento);
+    const cnt = getParticipantsForEvent(item.id).length;
+    const initialPer = item.per != null ? item.per : (item.total ?? 0) / (cnt || 1);
+    setPer(initialPer.toFixed(2));
+    setParticipantsCollapsed(true);
+    setModalVisible(true);
   };
-  // Pasa a modo editar
-  const openEditModal = (item) => {
+
+  const openEditModal = item => {
     openViewModal(item);
     setModalMode('edit');
   };
 
-  // Selector de fecha
   const handleDateChange = (_, sel) => {
     setShowDatePicker(false);
     if (sel) setDate(sel.toISOString().split('T')[0]);
   };
 
-  // Recalcula “c/u” al cambiar total
   useEffect(() => {
     if (!selectedId) return;
     const t = parseFloat(total) || 0;
@@ -130,7 +108,6 @@ export default function HomeScreen() {
     setPer(cnt > 0 ? (t / cnt).toFixed(2) : '0.00');
   }, [total, selectedId]);
 
-  // Guarda cambios en editar
   const handleSave = () => {
     const t = parseFloat(total) || 0;
     const cnt = getParticipantsForEvent(selectedId).length;
@@ -148,29 +125,27 @@ export default function HomeScreen() {
     setModalVisible(false);
   };
 
-  // Render de cada tarjeta
+  // Render de cada tarjeta, tocable para abrir modal
   const renderEvent = ({ item }) => {
     const eDate = new Date(item.date);
     const dateIcon = eDate >= yesterday ? 'today-outline' : 'calendar-outline';
     const dateColor = eDate >= yesterday ? '#00FF55' : '#FF6B6B';
     const whatsappClr = item.whatsappEnvio ? '#00FF55' : '#888';
+    const peopleClr = item.whatsappEnvio ? '#4285F4' : '#888';
+    const expenseClr = item.whatsappEnvio ? '#00FF55' : '#888';
     const mapClr = item.map ? '#4285F4' : '#888';
-    const viewClr = '#4285F4';
     const lockIcon = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
     const lockClr = item.estadoEvento ? '#00FF55' : '#FF6B6B';
     const editClr = item.estadoEvento ? '#4285F4' : '#888';
-
     const cnt = getParticipantsForEvent(item.id).length;
-    const totalValue = item.total ?? 0;
-    const perValue = item.per != null ? item.per : totalValue / (cnt || 1);
-    const totalFmt = totalValue.toLocaleString();
-    const perFmt = perValue.toLocaleString(undefined, {
+    const totalFmt = (item.total ?? 0).toLocaleString();
+    const perFmt = (item.per ?? 0).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
 
     return (
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => openViewModal(item)}>
         <View style={styles.cardContent}>
           <Ionicons name={dateIcon} size={40} color={dateColor} style={styles.eventIcon} />
           <View style={styles.eventInfo}>
@@ -188,9 +163,12 @@ export default function HomeScreen() {
           </View>
         </View>
         <View style={styles.actions}>
-          <TouchableOpacity onPress={() => openViewModal(item)}>
-            <Ionicons name="eye-outline" size={20} color={viewClr} />
-          </TouchableOpacity>
+          <View style={styles.actionButton}>
+            <Ionicons name="cash-outline" size={20} color={expenseClr} />
+          </View>
+          <View style={styles.actionButton}>
+            <Ionicons name="people-outline" size={20} color={peopleClr} />
+          </View>          
           <View style={styles.actionButton}>
             <Ionicons name="logo-whatsapp" size={20} color={whatsappClr} />
           </View>
@@ -212,7 +190,7 @@ export default function HomeScreen() {
             <Ionicons name="create-outline" size={20} color={editClr} />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -227,14 +205,20 @@ export default function HomeScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity onPress={() => setFilterStateActive(!filterStateActive)} style={styles.filterButton}>
+        <TouchableOpacity
+          onPress={() => setFilterStateActive(!filterStateActive)}
+          style={styles.filterButton}
+        >
           <Ionicons
             name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'}
             size={24}
             color={filterStateActive ? '#00FF55' : '#FFF'}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setFilterDateActive(!filterDateActive)} style={styles.filterButton}>
+        <TouchableOpacity
+          onPress={() => setFilterDateActive(!filterDateActive)}
+          style={styles.filterButton}
+        >
           <Ionicons
             name={filterDateActive ? 'today-outline' : 'calendar-outline'}
             size={24}
@@ -249,37 +233,40 @@ export default function HomeScreen() {
       {/* Lista de eventos */}
       <FlatList
         data={filtered}
-        keyExtractor={(i) => i.id}
+        keyExtractor={i => i.id}
         renderItem={renderEvent}
         contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
       />
 
       {/* Modal Ver/Editar Evento */}
-      <Modal transparent visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+      <Modal
+        transparent
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
           <View style={styles.modalContent}>
-            {/* Header del modal */}
+            {/* Header modal con botón a Gastos */}
             <View style={styles.modalHeader}>
-{/* Botón para ver/crear Gastos */}
- <TouchableOpacity
-   style={styles.gastosButton}
-   onPress={() => {
-     setModalVisible(false);
-     navigation.navigate('CreateExpense', { eventId: selectedId });
-   }}
- >
-  <Ionicons name="receipt-outline" size={20} color="#00FF55" />
-  <Text style={styles.gastosButtonText}>Gastos</Text>
-</TouchableOpacity>
-
               <Text style={styles.modalTitle}>
                 {modalMode === 'view' ? 'Detalle Evento' : 'Editar Evento'}
               </Text>
-              {modalMode === 'view' && estadoEvento && (
-   <TouchableOpacity onPress={() => setModalMode('edit')}>
-     <Text style={styles.modalEditLink}>Editar</Text>
-   </TouchableOpacity>
- )}
+              {modalMode === 'view' && (
+                <View style={styles.modalActionsRight}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('CreateExpense', { eventId: selectedId })
+                    }
+                    style={{ marginRight: 16 }}
+                  >
+                    <Ionicons name="receipt-outline" size={24} color="#00FF55" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setModalMode('edit')}>
+                    <Text style={styles.modalEditLink}>Editar</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* Switch WhatsApp */}
@@ -488,6 +475,7 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   modalTitle: { fontSize: 20, color: '#FFF', fontWeight: 'bold' },
   modalEditLink: { color: '#00FF55', fontSize: 16, textDecorationLine: 'underline' },
+   modalActionsRight: { flexDirection: 'row', alignItems: 'center' },
 
   /* Switch WhatsApp */
   switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
