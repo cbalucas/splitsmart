@@ -43,17 +43,17 @@ export const sampleEvents = [
 
   export const sampleGastos = [
     // EVENTO 1
-    { id: '1', descripcion: 'Carne',  monto:'50000',eventsParticipantsId: '4',  date: '2025-04-10' },
-    { id: '3', descripcion: 'Bebida',  monto:'5752.50',eventsParticipantsId: '1',  date: '2025-04-10' },
-    { id: '6', descripcion: 'Bebida',  monto:'2550',eventsParticipantsId: '1',  date: '2025-04-10' },
-    { id: '5', descripcion: 'Bebida',  monto:'70052.50',eventsParticipantsId: '3',  date: '2025-04-10' },
+    { id: '1', descripcion: 'Carne',  monto:'50000,00',eventsParticipantsId: '4',  date: '2025-04-10' },
+    { id: '3', descripcion: 'Bebida',  monto:'5752,50',eventsParticipantsId: '1',  date: '2025-04-10' },
+    { id: '6', descripcion: 'Bebida',  monto:'2550,00',eventsParticipantsId: '1',  date: '2025-04-10' },
+    { id: '5', descripcion: 'Bebida',  monto:'70052,50',eventsParticipantsId: '3',  date: '2025-04-10' },
     // EVENTO 2
-    { id: '4', descripcion: 'Bebida',  monto:'3552.50',eventsParticipantsId: '6',  date: '2025-04-10' },
-    { id: '7', descripcion: 'Asado',  monto:'153552.50',eventsParticipantsId: '6',  date: '2025-04-10' },
+    { id: '4', descripcion: 'Bebida',  monto:'3552,50',eventsParticipantsId: '6',  date: '2025-04-10' },
+    { id: '7', descripcion: 'Asado',  monto:'153552,50',eventsParticipantsId: '6',  date: '2025-04-10' },
     // EVENTO 3
-    { id: '2', descripcion: 'Picada',  monto:'35200',eventsParticipantsId: '8',  date: '2025-04-10' },
-    { id: '8', descripcion: 'Hielo',  monto:'5200',eventsParticipantsId: '7',  date: '2025-04-10' },
-    { id: '9', descripcion: 'Bebidas',  monto:'27500',eventsParticipantsId: '7',  date: '2025-04-10' },
+    { id: '2', descripcion: 'Picada',  monto:'35200,00',eventsParticipantsId: '8',  date: '2025-04-10' },
+    { id: '8', descripcion: 'Hielo',  monto:'5200,00',eventsParticipantsId: '7',  date: '2025-04-10' },
+    { id: '9', descripcion: 'Bebidas',  monto:'27500,00',eventsParticipantsId: '7',  date: '2025-04-10' },
   
   ];
 
