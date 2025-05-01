@@ -1,11 +1,10 @@
-// src/context/EventContext.js
 import React, { createContext, useState } from 'react';
 import {
   sampleEvents,
   sampleParticipants,
   sampleEventsParticipants,
   sampleGastos,
-} from '../data/sampleData'
+} from '../data/sampleData';
 
 export const EventContext = createContext();
 
@@ -15,16 +14,31 @@ export function EventProvider({ children }) {
   const [relations, setRelations] = useState(sampleEventsParticipants);
   const [gastos, setGastos] = useState(sampleGastos);
 
+  // Recalcula total y per de un evento
+  const recalcEventTotals = (eventId) => {
+    // IDs de relaciones para este evento
+    const relIds = relations
+      .filter((r) => r.eventsId === eventId)
+      .map((r) => r.id);
+    // Gastos vinculados
+    const evGastos = gastos.filter((g) => relIds.includes(g.eventsParticipantsId));
+    // Suma total
+    const totalSum = evGastos.reduce((sum, g) => sum + parseFloat(g.monto), 0);
+    // Cantidad de participantes
+    const count = relations.filter((r) => r.eventsId === eventId).length;
+    const per = count > 0 ? totalSum / count : 0;
+    updateEvent(eventId, { total: totalSum, per });
+  };
+
   // 1) Añade un nuevo evento y sus relaciones
   const addEvent = (e) => {
-    // crea el evento con las propiedades correctas
     const newId = (events.length + 1).toString();
     const evt = {
       id: newId,
       name: e.name,
       date: e.date,
-      total: e.total,
-      per: e.per,
+      total: 0,
+      per: 0,
       participants: e.participantsIds ? e.participantsIds.length : 0,
       estadoEvento: e.estadoEvento,
       whatsappEnvio: e.whatsappEnvio,
@@ -34,7 +48,6 @@ export function EventProvider({ children }) {
     };
     setEvents((prev) => [...prev, evt]);
 
-    // crea las relaciones evento↔participantes
     if (e.participantsIds && e.participantsIds.length) {
       const nextRels = e.participantsIds.map((pid, idx) => ({
         id: (relations.length + idx + 1).toString(),
@@ -62,8 +75,7 @@ export function EventProvider({ children }) {
   const addParticipantToEvent = (eventId, participantId) => {
     if (
       relations.some(
-        (r) =>
-          r.eventsId === eventId && r.participantsId === participantId
+        (r) => r.eventsId === eventId && r.participantsId === participantId
       )
     )
       return;
@@ -73,32 +85,27 @@ export function EventProvider({ children }) {
       participantsId: participantId,
     };
     setRelations((rel) => [...rel, newRel]);
-    // incrementa el contador en el evento
-    updateEvent(eventId, {
-      participants: getParticipantsForEvent(eventId).length + 1,
-    });
+    updateEvent(eventId, { participants: relCount(eventId) });
+    recalcEventTotals(eventId);
   };
 
   // 5) Quita participante de evento
   const removeParticipantFromEvent = (eventId, participantId) => {
     setRelations((rel) =>
       rel.filter(
-        (r) =>
-          !(
-            r.eventsId === eventId &&
-            r.participantsId === participantId
-          )
+        (r) => !(r.eventsId === eventId && r.participantsId === participantId)
       )
     );
-    // decrementa contador
-    updateEvent(eventId, {
-      participants: getParticipantsForEvent(eventId).length - 1,
-    });
+    updateEvent(eventId, { participants: relCount(eventId) });
+    recalcEventTotals(eventId);
   };
 
-  // —————————— Gestión de Gastos ——————————
+  const relCount = (eventId) =>
+    relations.filter((r) => r.eventsId === eventId).length;
 
-  // 1) Añade un gasto
+  // ——— Gestión de Gastos ———
+
+  // Añade un gasto y recalcula totales
   const addGasto = (g) => {
     const newId = (gastos.length + 1).toString();
     const gasto = {
@@ -109,21 +116,31 @@ export function EventProvider({ children }) {
       eventsParticipantsId: g.eventsParticipantsId,
     };
     setGastos((prev) => [...prev, gasto]);
+    const evId = relations.find((r) => r.id === gasto.eventsParticipantsId).eventsId;
+    recalcEventTotals(evId);
   };
 
-  // 2) Actualiza un gasto
+  // Actualiza un gasto y recalcula totales
   const updateGasto = (id, upd) => {
-    setGastos((prev) =>
-      prev.map((x) => (x.id === id ? { ...x, ...upd } : x))
-    );
+    setGastos((prev) => prev.map((x) => (x.id === id ? { ...x, ...upd } : x)));
+    const gasto = gastos.find((g) => g.id === id);
+    if (gasto) {
+      const evId = relations.find((r) => r.id === gasto.eventsParticipantsId).eventsId;
+      recalcEventTotals(evId);
+    }
   };
 
-  // 3) Elimina un gasto
+  // Elimina un gasto y recalcula totales
   const removeGasto = (id) => {
-    setGastos((prev) => prev.filter((x) => x.id !== id));
+    const gasto = gastos.find((g) => g.id === id);
+    if (gasto) {
+      const evId = relations.find((r) => r.id === gasto.eventsParticipantsId).eventsId;
+      setGastos((prev) => prev.filter((x) => x.id !== id));
+      recalcEventTotals(evId);
+    }
   };
 
-  // 4) Obtiene todos los gastos de un evento (a través de sus relations)
+  // Obtiene todos los gastos de un evento
   const getGastosForEvent = (eventId) => {
     const relIds = relations
       .filter((r) => r.eventsId === eventId)
@@ -142,8 +159,6 @@ export function EventProvider({ children }) {
         getParticipantsForEvent,
         addParticipantToEvent,
         removeParticipantFromEvent,
-
-        // Nuevo
         gastos,
         addGasto,
         updateGasto,
