@@ -12,38 +12,48 @@ import {
   Modal,
   Switch,
   TextInput as RNTextInput,
+  Linking,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { AuthContext } from '../context/AuthContext';
 import { EventContext } from '../context/EventContext';
-import { Linking } from 'react-native';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const { logout } = useContext(AuthContext);
   const {
     events,
     updateEvent,
     getParticipantsForEvent,
+    getGastosForEvent,
   } = useContext(EventContext);
 
-  // Búsqueda y filtros
+  // Reabrir modal si vienen de gastos
+  const { openEventId } = route.params || {};
+  useEffect(() => {
+    if (openEventId) {
+      const evt = events.find(e => e.id === openEventId);
+      if (evt) openViewModal(evt);
+    }
+  }, [openEventId, events]);
+
+  // Filtros y búsqueda
   const [search, setSearch] = useState('');
   const [filterStateActive, setFilterStateActive] = useState(false);
   const [filterDateActive, setFilterDateActive] = useState(false);
 
-  // Modal ver/editar
+  // Estado del modal
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit'
+  const [modalMode, setModalMode] = useState('view'); // 'view'|"edit"
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Sub-modal de participantes
-  const [showAddList, setShowAddList] = useState(false);
-  const [addListSearch, setAddListSearch] = useState('');
+  // Collapse toggles
   const [participantsCollapsed, setParticipantsCollapsed] = useState(true);
+  const [expensesCollapsed, setExpensesCollapsed] = useState(true);
 
   // Campos del modal
   const [selectedId, setSelectedId] = useState(null);
@@ -56,24 +66,23 @@ export default function HomeScreen() {
   const [per, setPer] = useState('0.00');
   const [estadoEvento, setEstadoEvento] = useState(true);
 
-  // “Ayer” para filtros de fecha
+  // “Ayer” para filtros
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // Filtro de eventos
+  // Filtrado de lista principal
   const filtered = events.filter(e => {
     const mSearch = e.name.toLowerCase().includes(search.toLowerCase());
     const mState = !filterStateActive || e.estadoEvento;
-    const eDate = new Date(e.date);
-    const mDate = !filterDateActive || eDate >= yesterday;
+    const d = new Date(e.date);
+    const mDate = !filterDateActive || d >= yesterday;
     return mSearch && mState && mDate;
   });
 
-  // Cierra evento
+  // Funciones para abrir modal
   const closeEvent = id => updateEvent(id, { estadoEvento: false });
 
-  // Abre modal con datos del evento seleccionado
   const openViewModal = item => {
     setModalMode('view');
     setSelectedId(item.id);
@@ -83,35 +92,22 @@ export default function HomeScreen() {
     setMapUrl(item.map || '');
     setWhatsappEnvio(item.whatsappEnvio);
     setTotal((item.total ?? '').toString());
+    setPer((item.per ?? 0).toFixed(2));
     setEstadoEvento(item.estadoEvento);
-    const cnt = getParticipantsForEvent(item.id).length;
-    const initialPer = item.per != null ? item.per : (item.total ?? 0) / (cnt || 1);
-    setPer(initialPer.toFixed(2));
     setParticipantsCollapsed(true);
+    setExpensesCollapsed(true);
     setModalVisible(true);
   };
-
   const openEditModal = item => {
     openViewModal(item);
     setModalMode('edit');
   };
 
-  const handleDateChange = (_, sel) => {
-    setShowDatePicker(false);
-    if (sel) setDate(sel.toISOString().split('T')[0]);
-  };
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const t = parseFloat(total) || 0;
-    const cnt = getParticipantsForEvent(selectedId).length;
-    setPer(cnt > 0 ? (t / cnt).toFixed(2) : '0.00');
-  }, [total, selectedId]);
-
+  // Guardar edición
   const handleSave = () => {
     const t = parseFloat(total) || 0;
-    const cnt = getParticipantsForEvent(selectedId).length;
-    const newPer = cnt > 0 ? parseFloat((t / cnt).toFixed(2)) : 0;
+    const cnt = getParticipantsForEvent(selectedId).length || 1;
+    const newPer = parseFloat((t / cnt).toFixed(2));
     updateEvent(selectedId, {
       name,
       date,
@@ -125,29 +121,33 @@ export default function HomeScreen() {
     setModalVisible(false);
   };
 
-  // Render de cada tarjeta, tocable para abrir modal
+  // Recalcular c/u al cambiar total o participantes
+  useEffect(() => {
+    if (!selectedId) return;
+    const t = parseFloat(total) || 0;
+    const cnt = getParticipantsForEvent(selectedId).length || 1;
+    setPer((t / cnt).toFixed(2));
+  }, [total, selectedId]);
+
+  // Render de la card de evento
   const renderEvent = ({ item }) => {
-    const eDate = new Date(item.date);
-    const dateIcon = eDate >= yesterday ? 'today-outline' : 'calendar-outline';
-    const dateColor = eDate >= yesterday ? '#00FF55' : '#FF6B6B';
+    const d = new Date(item.date);
+    const dateIcon = d >= yesterday ? 'today-outline' : 'calendar-outline';
+    const dateColor = d >= yesterday ? '#00FF55' : '#FF6B6B';
     const whatsappClr = item.whatsappEnvio ? '#00FF55' : '#888';
-    const peopleClr = item.whatsappEnvio ? '#4285F4' : '#888';
-    const expenseClr = item.whatsappEnvio ? '#00FF55' : '#888';
     const mapClr = item.map ? '#4285F4' : '#888';
     const lockIcon = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
     const lockClr = item.estadoEvento ? '#00FF55' : '#FF6B6B';
-    const editClr = item.estadoEvento ? '#4285F4' : '#888';
     const cnt = getParticipantsForEvent(item.id).length;
     const totalFmt = (item.total ?? 0).toLocaleString();
     const perFmt = (item.per ?? 0).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
     });
 
     return (
       <TouchableOpacity style={styles.card} onPress={() => openViewModal(item)}>
         <View style={styles.cardContent}>
-          <Ionicons name={dateIcon} size={40} color={dateColor} style={styles.eventIcon} />
+          <Ionicons name={dateIcon} size={40} color={dateColor} style={styles.eventIcon}/>
           <View style={styles.eventInfo}>
             <Text style={styles.eventName}>{item.name}</Text>
             <Text style={styles.eventDate}>{item.date}</Text>
@@ -157,43 +157,53 @@ export default function HomeScreen() {
             <Text style={styles.amountText}>${totalFmt}</Text>
             <Text style={styles.amountSub}>c/u ${perFmt}</Text>
             <View style={styles.participantsRow}>
-              <Ionicons name="people-outline" size={16} color="#AAA" />
+              <Ionicons name="people-outline" size={16} color="#AAA"/>
               <Text style={styles.eventParticipantsCount}>{cnt}</Text>
             </View>
           </View>
         </View>
         <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('CreateExpense', { eventId: item.id })}
+          >
+            <Ionicons name="cash-outline" size={20} color="#00FF55"/>
+          </TouchableOpacity>
           <View style={styles.actionButton}>
-            <Ionicons name="cash-outline" size={20} color={expenseClr} />
-          </View>
-          <View style={styles.actionButton}>
-            <Ionicons name="people-outline" size={20} color={peopleClr} />
-          </View>          
-          <View style={styles.actionButton}>
-            <Ionicons name="logo-whatsapp" size={20} color={whatsappClr} />
+            <Ionicons name="logo-whatsapp" size={20} color={whatsappClr}/>
           </View>
           <TouchableOpacity
             style={styles.actionButton}
             disabled={!item.map}
             onPress={() => item.map && Linking.openURL(item.map)}
           >
-            <Ionicons name="map-outline" size={20} color={mapClr} />
+            <Ionicons name="map-outline" size={20} color={mapClr}/>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => closeEvent(item.id)}>
-            <Ionicons name={lockIcon} size={20} color={lockClr} />
+            <Ionicons name={lockIcon} size={20} color={lockClr}/>
           </TouchableOpacity>
-          <TouchableOpacity
-            disabled={!item.estadoEvento}
-            style={styles.actionButton}
-            onPress={() => openEditModal(item)}
-          >
-            <Ionicons name="create-outline" size={20} color={editClr} />
-          </TouchableOpacity>
+          {modalMode==='view' && estadoEvento && (
+            <TouchableOpacity style={styles.actionButton} onPress={()=>openEditModal(item)}>
+              <Ionicons name="create-outline" size={20} color="#4285F4"/>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
   };
 
+  // Render ítem de gasto en vista
+  const renderGastoItem = ({ item }) => (
+    <View style={styles.partRow}>
+      <Ionicons name="document-text-outline" size={20} color="#FFF"/>
+      <Text style={styles.partName}>{item.descripcion}</Text>
+      <Text style={[styles.partName, { marginLeft: 12 }]}>
+        ${item.monto.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </Text>
+    </View>
+  );
+
+  // Modal de detalle / edición
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -205,103 +215,75 @@ export default function HomeScreen() {
           onChangeText={setSearch}
           style={styles.searchInput}
         />
-        <TouchableOpacity
-          onPress={() => setFilterStateActive(!filterStateActive)}
-          style={styles.filterButton}
-        >
-          <Ionicons
-            name={filterStateActive ? 'lock-open-outline' : 'lock-closed-outline'}
-            size={24}
-            color={filterStateActive ? '#00FF55' : '#FFF'}
-          />
+        <TouchableOpacity onPress={()=>setFilterStateActive(!filterStateActive)} style={styles.filterButton}>
+          <Ionicons name={filterStateActive?'lock-open-outline':'lock-closed-outline'} size={24} color={filterStateActive?'#00FF55':'#FFF'}/>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setFilterDateActive(!filterDateActive)}
-          style={styles.filterButton}
-        >
-          <Ionicons
-            name={filterDateActive ? 'today-outline' : 'calendar-outline'}
-            size={24}
-            color={filterDateActive ? '#00FF55' : '#FFF'}
-          />
+        <TouchableOpacity onPress={()=>setFilterDateActive(!filterDateActive)} style={styles.filterButton}>
+          <Ionicons name={filterDateActive?'today-outline':'calendar-outline'} size={24} color={filterDateActive?'#00FF55':'#FFF'}/>
         </TouchableOpacity>
-        <TouchableOpacity onPress={logout} style={{ marginLeft: 16 }}>
-          <Image source={require('../assets/avatar.png')} style={styles.avatar} />
+        <TouchableOpacity onPress={logout} style={{marginLeft:16}}>
+          <Image source={require('../assets/avatar.png')} style={styles.avatar}/>
         </TouchableOpacity>
       </View>
 
       {/* Lista de eventos */}
       <FlatList
         data={filtered}
-        keyExtractor={i => i.id}
+        keyExtractor={i=>i.id}
         renderItem={renderEvent}
-        contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
+        contentContainerStyle={{padding:16,paddingBottom:80}}
       />
 
-      {/* Modal Ver/Editar Evento */}
-      <Modal
-        transparent
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
+      {/* Modal */}
+      <Modal transparent visible={modalVisible} animationType="slide" onRequestClose={()=>setModalVisible(false)}>
+        <View style={[styles.modalOverlay,{backgroundColor:'rgba(0,0,0,0.8)'}]}>
           <View style={styles.modalContent}>
-            {/* Header modal con botón a Gastos */}
+
+            {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {modalMode === 'view' ? 'Detalle Evento' : 'Editar Evento'}
+                {modalMode==='view'?'Detalle Evento':'Editar Evento'}
               </Text>
-              {modalMode === 'view' && (
-                <View style={styles.modalActionsRight}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('CreateExpense', { eventId: selectedId })
-                    }
-                    style={{ marginRight: 16 }}
-                  >
-                    <Ionicons name="receipt-outline" size={24} color="#00FF55" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setModalMode('edit')}>
-                    <Text style={styles.modalEditLink}>Editar</Text>
-                  </TouchableOpacity>
-                </View>
+              {modalMode==='view' && estadoEvento && (
+                <TouchableOpacity onPress={()=>setModalMode('edit')}>
+                  <Text style={styles.modalEditLink}>Editar</Text>
+                </TouchableOpacity>
               )}
             </View>
 
-            {/* Switch WhatsApp */}
+            {/* WhatsApp */}
             <View style={styles.switchRow}>
-              <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon} />
+              <Ionicons name="logo-whatsapp" size={20} color="#FFF" style={styles.modalIcon}/>
               <Text style={styles.switchLabel}>Envío por WhatsApp:</Text>
               <Switch
                 value={whatsappEnvio}
                 onValueChange={setWhatsappEnvio}
-                disabled={modalMode === 'view'}
-                thumbColor={whatsappEnvio ? '#00FF55' : '#FFF'}
-                trackColor={{ true: '#55FF88', false: '#333' }}
+                disabled={modalMode==='view'}
+                thumbColor={whatsappEnvio?'#00FF55':'#FFF'}
+                trackColor={{true:'#55FF88',false:'#333'}}
               />
             </View>
 
             {/* Inputs básicos */}
             {[
-              { icon: 'text-outline', value: name, setter: setName, placeholder: 'Nombre del evento' },
-              { icon: 'calendar-number-outline', value: date, setter: setDate, placeholder: 'YYYY-MM-DD' },
-              { icon: 'trail-sign-outline', value: address, setter: setAddress, placeholder: 'Dirección' },
-              { icon: 'location-outline', value: mapUrl, setter: setMapUrl, placeholder: 'Mapa URL' },
-            ].map((f, i) => (
+              {icon:'text-outline', value:name,setter:setName,placeholder:'Nombre del evento'},
+              {icon:'calendar-number-outline',value:date,setter:setDate,placeholder:'YYYY-MM-DD'},
+              {icon:'trail-sign-outline',value:address,setter:setAddress,placeholder:'Dirección'},
+              {icon:'location-outline',value:mapUrl,setter:setMapUrl,placeholder:'Mapa URL'},
+            ].map((f,i)=>(
               <View key={i} style={styles.inputRow}>
-                <Ionicons name={f.icon} size={20} color="#FFF" style={styles.modalIcon} />
+                <Ionicons name={f.icon} size={20} color="#FFF" style={styles.modalIcon}/>
                 <RNTextInput
                   placeholder={f.placeholder}
                   placeholderTextColor="#AAA"
                   style={styles.modalInput}
                   value={f.value}
                   onChangeText={f.setter}
-                  editable={modalMode !== 'view'}
+                  editable={modalMode!=='view'}
                 />
-                {f.placeholder === 'YYYY-MM-DD' && modalMode !== 'view' && (
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.calIcon}>
-                    <Ionicons name="calendar-outline" size={24} color="#00FF55" />
+                {f.placeholder==='YYYY-MM-DD' && modalMode!=='view' && (
+                  <TouchableOpacity onPress={()=>setShowDatePicker(true)} style={styles.calIcon}>
+                    <Ionicons name="calendar-outline" size={24} color="#00FF55"/>
                   </TouchableOpacity>
                 )}
               </View>
@@ -309,133 +291,74 @@ export default function HomeScreen() {
 
             {showDatePicker && (
               <DateTimePicker
-                value={date ? new Date(date) : new Date()}
+                value={date?new Date(date):new Date()}
                 mode="date"
                 display="default"
-                onChange={handleDateChange}
+                onChange={(_,sel)=>{setShowDatePicker(false); if(sel)setDate(sel.toISOString().split('T')[0]);}}
               />
             )}
 
-            {/* Gasto Total */}
-            <View style={styles.inputRow}>
-              <Ionicons name="cash-outline" size={20} color="#FFF" style={styles.modalIcon} />
-              <Text style={styles.dollarSign}>$</Text>
-              <RNTextInput
-                placeholder="Gasto Total"
-                placeholderTextColor="#AAA"
-                style={styles.modalInput}
-                value={total}
-                onChangeText={setTotal}
-                keyboardType="decimal-pad"
-                editable={modalMode !== 'view'}
-              />
-            </View>
-
-            {/* Sección Participantes */}
-            <View style={styles.partHeader}>
-              <Text style={styles.sectionTitle}>
-                Participantes ({getParticipantsForEvent(selectedId).length})
-              </Text>
-              <TouchableOpacity
-                onPress={() => setParticipantsCollapsed((v) => !v)}
-                style={styles.toggleListButton}
-              >
-                <Ionicons
-                  name={participantsCollapsed ? 'chevron-down-outline' : 'chevron-up-outline'}
-                  size={20}
-                  color="#FFF"
-                />
-              </TouchableOpacity>
-              {modalMode === 'edit' && (
-                <TouchableOpacity onPress={() => setShowAddList(true)} style={styles.addIconButton}>
-                  <Ionicons name="person-add-outline" size={20} color="#00FF55" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {!participantsCollapsed && (
+            {modalMode==='view' && (
               <>
-                <TextInput
-                  placeholder="Buscar participante"
-                  placeholderTextColor="#AAA"
-                  value={addListSearch}
-                  onChangeText={setAddListSearch}
-                  style={styles.addListSearchInput}
-                />
-                <FlatList
-                  data={getParticipantsForEvent(selectedId).filter((p) =>
-                    p.name.toLowerCase().includes(addListSearch.toLowerCase())
-                  )}
-                  keyExtractor={(p) => p.id}
-                  renderItem={({ item }) => (
-                    <View style={styles.partRow}>
-                      <Ionicons name="person-outline" size={20} color="#FFF" />
-                      <Text style={styles.partName}>{item.name}</Text>
-                      {modalMode === 'edit' && (
-                        <TouchableOpacity
-                          onPress={() => removeParticipantFromEvent(selectedId, item.id)}
-                          style={styles.partRemove}
-                        >
-                          <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-                  style={{ maxHeight: 200 }}
-                />
+                {/* Gastos total y c/u */}
+                <View style={styles.inputRow}>
+                  <Ionicons name="cash-outline" size={20} color="#FFF" style={styles.modalIcon}/>
+                  <Text style={[styles.modalInput,{paddingVertical:0}]}>Total: ${parseFloat(total||0).toLocaleString()}</Text>
+                </View>
+                <View style={styles.inputRow}>
+                  <Ionicons name="calculator-outline" size={20} color="#FFF" style={styles.modalIcon}/>
+                  <Text style={[styles.modalInput,{paddingVertical:0}]}>c/u: ${per}</Text>
+                </View>
+
+                {/* Participantes */}
+                <TouchableOpacity style={styles.partHeader} onPress={()=>setParticipantsCollapsed(!participantsCollapsed)}>
+                  <Text style={styles.sectionTitle}>
+                    Participantes ({getParticipantsForEvent(selectedId).length})
+                  </Text>
+                  <Ionicons name={participantsCollapsed?'chevron-down-outline':'chevron-up-outline'} size={20} color="#FFF"/>
+                </TouchableOpacity>
+                {!participantsCollapsed && (
+                  <FlatList
+                    data={getParticipantsForEvent(selectedId)}
+                    keyExtractor={p=>p.id}
+                    renderItem={({item})=>(
+                      <View style={styles.partRow}>
+                        <Ionicons name="person-outline" size={20} color="#FFF"/>
+                        <Text style={styles.partName}>{item.name}</Text>
+                      </View>
+                    )}
+                    style={{maxHeight:150,marginBottom:16}}
+                  />
+                )}
+
+                {/* Gastos */}
+                <TouchableOpacity style={styles.partHeader} onPress={()=>setExpensesCollapsed(!expensesCollapsed)}>
+                  <Text style={styles.sectionTitle}>
+                    Gastos ({getGastosForEvent(selectedId).length})
+                  </Text>
+                  <Ionicons name={expensesCollapsed?'chevron-down-outline':'chevron-up-outline'} size={20} color="#FFF"/>
+                </TouchableOpacity>
+                {!expensesCollapsed && (
+                  <FlatList
+                    data={getGastosForEvent(selectedId)}
+                    keyExtractor={g=>g.id}
+                    renderItem={renderGastoItem}
+                    style={{maxHeight:200,marginBottom:16}}
+                  />
+                )}
               </>
             )}
 
-            {/* Sub-modal Agregar Participante */}
-            {showAddList && (
-              <Modal transparent animationType="slide">
-                <View style={[styles.addListOverlay, { backgroundColor: 'rgba(0,0,0,0.8)' }]}>
-                  <Text style={styles.addListTitle}>Participantes</Text>
-                  <TextInput
-                    placeholder="Buscar participante"
-                    placeholderTextColor="#AAA"
-                    value={addListSearch}
-                    onChangeText={setAddListSearch}
-                    style={styles.addListSearchInput}
-                  />
-                  <FlatList
-                    data={allParticipants
-                      .filter(
-                        (p) =>
-                          !getParticipantsForEvent(selectedId)
-                            .map((x) => x.id)
-                            .includes(p.id)
-                      )
-                      .filter((p) => p.name.toLowerCase().includes(addListSearch.toLowerCase()))}
-                    keyExtractor={(p) => p.id}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.partRow}
-                        onPress={() => {
-                          addParticipantToEvent(selectedId, item.id);
-                          setAddListSearch('');
-                        }}
-                      >
-                        <Ionicons name="person-outline" size={20} color="#FFF" />
-                        <Text style={styles.partName}>{item.name}</Text>
-                      </TouchableOpacity>
-                    )}
-                    style={{ maxHeight: 250 }}
-                  />
-                  <TouchableOpacity style={styles.addListClose} onPress={() => setShowAddList(false)}>
-                    <Text style={styles.addListCloseText}>Cerrar</Text>
-                  </TouchableOpacity>
-                </View>
-              </Modal>
-            )}
+            {/* En edición sólo inputs */}
+            {modalMode==='edit' && <View style={{height:16}}/>}
 
-            {/* Footer del modal */}
+            {/* Footer */}
             <View style={styles.modalFooter}>
-              <TouchableOpacity style={[styles.button, styles.buttonDisabled]} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity style={[styles.button,styles.buttonDisabled]} onPress={()=>setModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancelar</Text>
               </TouchableOpacity>
-              {modalMode !== 'view' && (
-                <TouchableOpacity style={[styles.button, styles.buttonPrimary]} onPress={handleSave}>
+              {modalMode==='edit' && (
+                <TouchableOpacity style={[styles.button,styles.buttonPrimary]} onPress={handleSave}>
                   <Text style={styles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
               )}
