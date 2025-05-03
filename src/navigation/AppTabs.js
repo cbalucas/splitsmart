@@ -20,14 +20,18 @@ export default function AppTabs() {
           if (route.name === 'Participants') iconName = 'people-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        //tabBarActiveTintColor: '#00FF55',
         tabBarActiveTintColor: '#008000',
         tabBarInactiveTintColor: 'gray',
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Nuevo Evento' }} />
-      <Tab.Screen name="Participants" component={ParticipantsScreen} options={{ title: 'Participantes' }} />
+      <Tab.Screen 
+        name="Participants" 
+        component={ParticipantsScreen}
+        options={{ title: 'Participantes' }}
+        initialParams={{ fromTabBar: true }} 
+      />
     </Tab.Navigator>
   );
 }

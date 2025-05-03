@@ -1,27 +1,42 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useLayoutEffect } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   TextInput,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   Modal,
   Alert,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
-import { sampleParticipants } from '../data/sampleData';
+import { EventContext } from '../context/EventContext';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import colors from '../styles/colors';
+import commonStyles from '../styles/commonStyles';
+import participantStyles from '../styles/participantStyles';
 
 export default function ParticipantsScreen() {
   const { logout } = useContext(AuthContext);
-
-  // Estado de participantes y búsqueda
-  const [participants, setParticipants] = useState(sampleParticipants);
+  const { 
+    participants, 
+    events,
+    addParticipant,
+    updateParticipant,
+    getParticipantsForEvent, 
+    addParticipantToEvent, 
+    removeParticipantFromEvent 
+  } = useContext(EventContext);
+  const navigation = useNavigation();
+  const route = useRoute();
+  
+  const { eventId, fromTabBar } = route.params || {};
+  const currentEvent = events.find(e => e.id === eventId);
+  
   const [search, setSearch] = useState('');
+  const [showOnlyEventParticipants, setShowOnlyEventParticipants] = useState(!fromTabBar);
 
-  // Modal ver/editar participante
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -30,19 +45,46 @@ export default function ParticipantsScreen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
 
-  // Formulario colapsable para agregar nuevo
   const [formExpanded, setFormExpanded] = useState(false);
   const [newName, setNewName] = useState('');
   const [newAlias, setNewAlias] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
 
-  // Filtrar lista
-  const filtered = participants.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useLayoutEffect(() => {
+    if (eventId) {
+      navigation.setOptions({
+        headerLeft: () => (
+          <TouchableOpacity 
+            onPress={() => {
+              navigation.navigate('Tabs', {
+                screen: 'Home',
+              });
+            }} 
+            style={{ marginLeft: 16 }}
+          >
+            <Ionicons name="arrow-back-outline" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        ),
+        title: currentEvent ? `Participantes - ${currentEvent.name}` : 'Participantes'
+      });
+    }
+  }, [navigation, eventId, currentEvent]);
 
-  // Colapsar formulario y resetear campos
+  const eventParticipants = eventId ? getParticipantsForEvent(eventId) : [];
+  
+  const filtered = participants.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    if (!eventId) return matchesSearch;
+    
+    const isInEvent = eventParticipants.some(ep => ep.id === p.id);
+    return matchesSearch && (showOnlyEventParticipants ? isInEvent : true);
+  });
+
+  const isParticipantInEvent = (participantId) => {
+    return eventParticipants.some(p => p.id === participantId);
+  };
+
   const collapseForm = () => {
     setFormExpanded(false);
     setNewName('');
@@ -51,191 +93,267 @@ export default function ParticipantsScreen() {
     setNewEmail('');
   };
 
-  // Abrir modal en modo ver
   const openView = p => {
     setSelectedId(p.id);
     setName(p.name);
-    setAlias(p.aliasCBU);
-    setPhone(p.phone);
-    setEmail(p.email);
+    setAlias(p.aliasCBU || '');
+    setPhone(p.phone || '');
+    setEmail(p.email || '');
     setIsEditing(false);
     setModalVisible(true);
   };
 
-  // Abrir modal en modo edición
   const openEdit = () => {
     setIsEditing(true);
   };
 
-  // Guardar en modal (editar)
   const saveModal = () => {
     if (!name.trim()) {
-      Alert.alert('El nombre es obligatorio');
+      Alert.alert('Error', 'El nombre es obligatorio');
       return;
     }
-    setParticipants(prev =>
-      prev.map(p =>
-        p.id === selectedId ? { ...p, name, aliasCBU: alias, phone, email } : p
-      )
-    );
-    setModalVisible(false);
-  };
-
-  // Eliminar participante
-  const deleteParticipant = id => {
-    Alert.alert('Eliminar participante', '¿Seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar', style: 'destructive', onPress: () =>
-          setParticipants(prev => prev.filter(p => p.id !== id))
+    
+    try {
+      const result = updateParticipant(selectedId, {
+        name,
+        aliasCBU: alias,
+        phone,
+        email
+      });
+      
+      if (result) {
+        Alert.alert('Éxito', 'Participante actualizado correctamente');
+        setIsEditing(false);
+        setModalVisible(false);
+      } else {
+        Alert.alert('Error', 'No se pudo actualizar el participante');
       }
-    ]);
+    } catch (error) {
+      console.error('Error al actualizar participante:', error);
+      Alert.alert('Error', 'Ocurrió un error al actualizar el participante');
+    }
   };
 
-  // Agregar nuevo participante
+  const removeFromEvent = (participantId) => {
+    if (eventId) {
+      try {
+        const result = removeParticipantFromEvent(eventId, participantId);
+        if (result) {
+          setShowOnlyEventParticipants(prev => {
+            setTimeout(() => setShowOnlyEventParticipants(prev), 50);
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error('Error al quitar participante:', error);
+      }
+    }
+  };
+
+  const addToEvent = (participantId) => {
+    if (eventId) {
+      try {
+        addParticipantToEvent(eventId, participantId);
+        
+        setShowOnlyEventParticipants(prev => {
+          setTimeout(() => setShowOnlyEventParticipants(prev), 50);
+          return prev;
+        });
+      } catch (error) {
+        console.error('Error al añadir participante:', error);
+      }
+    }
+  };
+
   const addNew = () => {
     if (!newName.trim()) {
-      Alert.alert('El nombre es obligatorio');
+      Alert.alert('Error', 'El nombre es obligatorio');
       return;
     }
-    // Generar ID único basado en el mayor existente
-    const maxId = participants.reduce((max, p) => {
-      const num = parseInt(p.id, 10);
-      return num > max ? num : max;
-    }, 0);
-    const id = (maxId + 1).toString();
-
-    setParticipants(prev => [
-      ...prev,
-      { id, name: newName, aliasCBU: newAlias, phone: newPhone, email: newEmail },
-    ]);
-    collapseForm();
+    
+    try {
+      const newParticipantData = {
+        name: newName,
+        aliasCBU: newAlias,
+        phone: newPhone,
+        email: newEmail,
+        eventId: eventId
+      };
+      
+      const newId = addParticipant(newParticipantData);
+      
+      if (newId) {
+        Alert.alert('Éxito', 'Participante agregado correctamente');
+        collapseForm();
+        
+        if (eventId) {
+          setShowOnlyEventParticipants(prev => {
+            setTimeout(() => setShowOnlyEventParticipants(prev), 50);
+            return prev;
+          });
+        }
+      } else {
+        Alert.alert('Error', 'No se pudo agregar el participante');
+      }
+    } catch (error) {
+      console.error('Error al agregar participante:', error);
+      Alert.alert('Error', 'Ocurrió un error al agregar el participante');
+    }
   };
 
-  // Render de cada participante
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => openView(item)}>
-      <Ionicons name="person-outline" size={40} color="#FFF" style={styles.icon} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.alias}>{item.aliasCBU}</Text>
-      </View>
-      <View style={styles.actions}>
-        <Ionicons
-          name="phone-portrait-outline"
-          size={20}
-          color={item.phone ? '#00FF55' : '#888'}
-          style={styles.actionIcon}
+  const renderItem = ({ item }) => {
+    const isInEvent = eventId ? isParticipantInEvent(item.id) : false;
+    
+    return (
+      <TouchableOpacity style={participantStyles.card} onPress={() => openView(item)}>
+        <Ionicons 
+          name="person-outline" 
+          size={40} 
+          color={isInEvent ? colors.primary : colors.textPrimary} 
+          style={participantStyles.icon} 
         />
-        <Ionicons
-          name="at-outline"
-          size={20}
-          color={item.email ? '#00FF55' : '#888'}
-          style={styles.actionIcon}
-        />
-        <TouchableOpacity
-          onPress={() => deleteParticipant(item.id)}
-          style={styles.actionBtn}
-        >
-          <Ionicons name="trash-outline" size={24} color="#FF6B6B" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={participantStyles.info}>
+          <Text style={participantStyles.name}>{item.name}</Text>
+          <Text style={participantStyles.alias}>{item.aliasCBU}</Text>
+        </View>
+        <View style={participantStyles.actions}>
+          <Ionicons
+            name="phone-portrait-outline"
+            size={20}
+            color={item.phone ? colors.primary : colors.textDisabled}
+            style={participantStyles.actionIcon}
+          />
+          <Ionicons
+            name="at-outline"
+            size={20}
+            color={item.email ? colors.primary : colors.textDisabled}
+            style={participantStyles.actionIcon}
+          />
+          
+          {eventId && (
+            isInEvent ? (
+              <TouchableOpacity
+                onPress={() => removeFromEvent(item.id)}
+                style={participantStyles.actionBtn}
+              >
+                <Ionicons name="remove-circle-outline" size={24} color={colors.danger} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => addToEvent(item.id)}
+                style={participantStyles.actionBtn}
+              >
+                <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            )
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header con búsqueda y logout */}
-      <View style={styles.header}>
+    <SafeAreaView style={commonStyles.container}>
+      <View style={commonStyles.header}>
         <TextInput
           placeholder="Buscar participante"
-          placeholderTextColor="#888"
-          style={styles.searchInput}
+          placeholderTextColor={colors.textSecondary}
+          style={commonStyles.searchInput}
           value={search}
           onChangeText={setSearch}
         />
-        <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-          <Ionicons name="log-out-outline" size={24} color="#FFF" />
-        </TouchableOpacity>
+        {eventId && (
+          <TouchableOpacity 
+            onPress={() => setShowOnlyEventParticipants(!showOnlyEventParticipants)} 
+            style={commonStyles.filterButton}
+          >
+            <Ionicons 
+              name={showOnlyEventParticipants ? "people-outline" : "people-circle-outline"} 
+              size={24} 
+              color={showOnlyEventParticipants ? colors.textPrimary : colors.primary} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Lista de participantes */}
       <FlatList
         data={filtered}
         keyExtractor={p => p.id}
         renderItem={renderItem}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
       />
 
-      {/* Formulario colapsable para agregar */}
-      <TouchableOpacity
-        style={styles.toggle}
-        onPress={() => setFormExpanded(v => !v)}
+      <TouchableOpacity 
+        style={commonStyles.floatingButton}
+        onPress={() => setFormExpanded(!formExpanded)}
       >
-        <Ionicons
-          name={formExpanded ? 'chevron-down-outline' : 'chevron-up-outline'}
-          size={20}
-          color="#FFF"
+        <Ionicons 
+          name="add-outline" 
+          size={30} 
+          color={colors.textPrimary} 
         />
-        <Text style={styles.toggleText}>
-          {formExpanded ? 'Ocultar Formulario' : 'Agregar Participante'}
-        </Text>
       </TouchableOpacity>
-      {formExpanded && (
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Formulario Carga Participante</Text>
-          {[
-            { icon: 'person-outline', value: newName, setter: setNewName, placeholder: 'Nombre' },
-            { icon: 'wallet-outline', value: newAlias, setter: setNewAlias, placeholder: 'Alias CBU' },
-            { icon: 'phone-portrait-outline', value: newPhone, setter: setNewPhone, placeholder: 'Teléfono', keyboardType: 'phone-pad' },
-            { icon: 'at-outline', value: newEmail, setter: setNewEmail, placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
-          ].map((f, i) => (
-            <View key={i} style={styles.inputRow}>
-              <Ionicons name={f.icon} size={20} color="#FFF" style={styles.icon} />
-              <TextInput
-                placeholder={f.placeholder}
-                placeholderTextColor="#AAA"
-                style={styles.input}
-                value={f.value}
-                onChangeText={f.setter}
-                keyboardType={f.keyboardType}
-                autoCapitalize={f.autoCapitalize}
-              />
+
+      <Modal
+        visible={formExpanded}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setFormExpanded(false)}
+      >
+        <View style={commonStyles.modalOverlay}>
+          <View style={commonStyles.modalContent}>
+            <View style={commonStyles.modalHeader}>
+              <Text style={commonStyles.modalTitle}>Formulario Carga Participante</Text>
+              <TouchableOpacity onPress={() => setFormExpanded(false)}>
+                <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
+              </TouchableOpacity>
             </View>
-          ))}
-          <View style={styles.buttonRow}>
+            
+            {[
+              { icon: 'person-outline', value: newName, setter: setNewName, placeholder: 'Nombre' },
+              { icon: 'wallet-outline', value: newAlias, setter: setNewAlias, placeholder: 'Alias CBU' },
+              { icon: 'phone-portrait-outline', value: newPhone, setter: setNewPhone, placeholder: 'Teléfono', keyboardType: 'phone-pad' },
+              { icon: 'at-outline', value: newEmail, setter: setNewEmail, placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
+            ].map((f, i) => (
+              <View key={i} style={commonStyles.inputRow}>
+                <Ionicons name={f.icon} size={20} color={colors.textPrimary} style={participantStyles.icon} />
+                <TextInput
+                  placeholder={f.placeholder}
+                  placeholderTextColor={colors.textSecondary}
+                  style={participantStyles.input}
+                  value={f.value}
+                  onChangeText={f.setter}
+                  keyboardType={f.keyboardType}
+                  autoCapitalize={f.autoCapitalize}
+                />
+              </View>
+            ))}
+
             <TouchableOpacity
-              style={[styles.button, styles.cancelBtn]}
-              onPress={() => setFormExpanded(false)}
-            >
-              <Text style={styles.buttonText}>Cancelar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.saveBtn]}
+              style={commonStyles.saveButton}
               onPress={addNew}
             >
-              <Text style={styles.buttonText}>Guardar</Text>
+              <Text style={commonStyles.saveButtonText}>Guardar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      </Modal>
 
-      {/* Modal ver/editar participante */}
       <Modal
         transparent
         visible={modalVisible}
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={commonStyles.modalOverlay}>
+          <View style={commonStyles.modalContent}>
+            <View style={commonStyles.modalHeader}>
+              <Text style={commonStyles.modalTitle}>
                 {isEditing ? 'Editar Participante' : 'Participante'}
               </Text>
               {!isEditing && (
                 <TouchableOpacity onPress={openEdit}>
-                  <Text style={styles.modalEditLink}>Editar</Text>
+                  <Ionicons name="create-outline" size={24} color={colors.primary}/>
                 </TouchableOpacity>
               )}
             </View>
@@ -245,12 +363,12 @@ export default function ParticipantsScreen() {
               { icon: 'phone-portrait-outline', value: phone, setter: setPhone, placeholder: 'Teléfono', keyboardType: 'phone-pad' },
               { icon: 'at-outline', value: email, setter: setEmail, placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
             ].map((f, i) => (
-              <View key={i} style={styles.inputRow}>
-                <Ionicons name={f.icon} size={20} color="#FFF" style={styles.icon} />
+              <View key={i} style={commonStyles.inputRow}>
+                <Ionicons name={f.icon} size={20} color={colors.textPrimary} style={participantStyles.icon} />
                 <TextInput
                   placeholder={f.placeholder}
-                  placeholderTextColor="#AAA"
-                  style={styles.input}
+                  placeholderTextColor={colors.textSecondary}
+                  style={participantStyles.input}
                   value={f.value}
                   onChangeText={f.setter}
                   editable={isEditing}
@@ -260,18 +378,37 @@ export default function ParticipantsScreen() {
               </View>
             ))}
             {isEditing && (
-              <View style={styles.buttonRow}>
+              <View style={participantStyles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.button, styles.cancelBtn]}
-                  onPress={() => setModalVisible(false)}
+                  style={[commonStyles.button, commonStyles.cancelBtn]}
+                  onPress={() => {
+                    setIsEditing(false);
+                    const participant = participants.find(p => p.id === selectedId);
+                    if (participant) {
+                      setName(participant.name);
+                      setAlias(participant.aliasCBU || '');
+                      setPhone(participant.phone || '');
+                      setEmail(participant.email || '');
+                    }
+                  }}
                 >
-                  <Text style={styles.buttonText}>Cancelar</Text>
+                  <Text style={commonStyles.buttonText}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.button, styles.saveBtn]}
+                  style={[commonStyles.button, commonStyles.saveBtn]}
                   onPress={saveModal}
                 >
-                  <Text style={styles.buttonText}>Guardar</Text>
+                  <Text style={commonStyles.buttonText}>Guardar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {!isEditing && (
+              <View style={participantStyles.singleButtonContainer}>
+                <TouchableOpacity
+                  style={participantStyles.closeButtonFull}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={participantStyles.closeButtonTextFixed}>Cerrar</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -281,34 +418,3 @@ export default function ParticipantsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0E1A' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2230' },
-  searchInput: { flex: 1, backgroundColor: '#0F1120', borderRadius: 12, paddingHorizontal: 12, color: '#FFF' },
-  logoutBtn: { marginLeft: 16 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1F2230', borderRadius: 12, padding: 12, marginBottom: 12 },
-  icon: { marginRight: 12 },
-  info: { flex: 1 },
-  name: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  alias: { color: '#AAA', fontSize: 14 },
-  actions: { flexDirection: 'row', alignItems: 'center' },
-  actionIcon: { marginHorizontal: 8 },
-  actionBtn: { padding: 4 },
-  toggle: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  toggleText: { color: '#FFF', marginLeft: 8 },
-  formContainer: { marginHorizontal: 16, backgroundColor: '#1F2230', borderRadius: 8, padding: 16 },
-  formTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 12 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  input: { flex: 1, backgroundColor: '#333', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, color: '#FFF' },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 },
-  button: { flex: 1, borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginHorizontal: 4 },
-  cancelBtn: { backgroundColor: '#696969' },
-  saveBtn: { backgroundColor: '#00FF55' },
-  buttonText: { color: '#0A0E1A', fontWeight: 'bold' },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
-  modalContent: { width: '90%', backgroundColor: '#1F2230', borderRadius: 12, padding: 16 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 20, color: '#FFF', fontWeight: 'bold' },
-  modalEditLink: { color: '#00FF55', fontSize: 16, textDecorationLine: 'underline' },
-});

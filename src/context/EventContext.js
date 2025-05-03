@@ -1,5 +1,5 @@
 // src/context/EventContext.js
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import {
   sampleEvents,
   sampleParticipants,
@@ -11,9 +11,87 @@ export const EventContext = createContext();
 
 export function EventProvider({ children }) {
   const [events, setEvents] = useState(sampleEvents);
-  const [participants] = useState(sampleParticipants);
+  const [participants, setParticipants] = useState(sampleParticipants);
   const [relations, setRelations] = useState(sampleEventsParticipants);
   const [gastos, setGastos] = useState(sampleGastos);
+
+  // Calcular los totales para todos los eventos cuando se inicia la app
+  useEffect(() => {
+    // Obtener todos los eventIds únicos
+    const uniqueEventIds = [...new Set(relations.map(r => r.eventsId))];
+    
+    // Primero actualizar la cantidad de participantes para cada evento
+    const updatedEvents = events.map(event => {
+      const participantsCount = relations.filter(r => r.eventsId === event.id).length;
+      return { ...event, participants: participantsCount };
+    });
+    
+    // Actualizar el estado de eventos con las cantidades de participantes
+    setEvents(updatedEvents);
+    
+    // Ahora calcular el total y el monto por persona para cada evento
+    uniqueEventIds.forEach(eventId => {
+      recalcTotals(eventId, gastos);
+    });
+  }, []); // Solo se ejecuta cuando el componente se monta
+
+  // ————— Participantes —————
+  
+  // Añade un nuevo participante
+  const addParticipant = (participantData) => {
+    // Generar un nuevo ID basado en el máximo actual + 1
+    const maxId = participants.reduce((max, p) => {
+      const num = parseInt(p.id, 10);
+      return num > max ? num : max;
+    }, 0);
+    const newId = (maxId + 1).toString();
+    
+    const newParticipant = {
+      id: newId,
+      name: participantData.name,
+      aliasCBU: participantData.aliasCBU || '',
+      phone: participantData.phone || '',
+      email: participantData.email || '',
+    };
+    
+    setParticipants(prev => [...prev, newParticipant]);
+    
+    // Si se especificó un eventId, agregar al evento
+    if (participantData.eventId) {
+      addParticipantToEvent(participantData.eventId, newId);
+    }
+    
+    return newId; // Retornar el ID para posibles usos posteriores
+  };
+  
+  // Actualiza un participante existente
+  const updateParticipant = (id, updatedData) => {
+    setParticipants(prev =>
+      prev.map(p => p.id === id ? { ...p, ...updatedData } : p)
+    );
+    return true;
+  };
+  
+  // Elimina un participante y todas sus relaciones
+  const removeParticipant = (id) => {
+    // Primero eliminar todas las relaciones que contengan a este participante
+    const participantRelations = relations.filter(r => r.participantsId === id);
+    
+    // Para cada relación, actualizar el contador de participantes del evento
+    participantRelations.forEach(rel => {
+      const eventId = rel.eventsId;
+      const currentCount = getParticipantsForEvent(eventId).length;
+      updateEvent(eventId, { participants: currentCount - 1 });
+    });
+    
+    // Eliminar las relaciones
+    setRelations(prev => prev.filter(r => r.participantsId !== id));
+    
+    // Eliminar el participante
+    setParticipants(prev => prev.filter(p => p.id !== id));
+    
+    return true;
+  };
 
   // ————— Eventos —————
 
@@ -67,21 +145,59 @@ export function EventProvider({ children }) {
       participantsId: participantId,
     };
     setRelations(prev => [...prev, newRel]);
-    // actualizar contador de participantes
+    
+    // Actualizar contador de participantes
+    const newCount = getParticipantsForEvent(eventId).length + 1;
+    
+    // Obtener el total actual del evento
+    const currentEvent = events.find(e => e.id === eventId);
+    const totalGastos = currentEvent?.total || 0;
+    
+    // Calcular el nuevo valor por persona
+    const newPer = newCount > 0 ? totalGastos / newCount : 0;
+    
+    // Actualizar el evento con los nuevos valores
     updateEvent(eventId, {
-      participants: getParticipantsForEvent(eventId).length + 1,
+      participants: newCount,
+      per: newPer
     });
   };
 
   const removeParticipantFromEvent = (eventId, participantId) => {
-    setRelations(prev =>
-      prev.filter(
-        r => !(r.eventsId === eventId && r.participantsId === participantId)
-      )
-    );
-    updateEvent(eventId, {
-      participants: getParticipantsForEvent(eventId).length - 1,
-    });
+    try {
+      // Antes de eliminar, guardar el conteo actual para la actualización
+      const currentCount = getParticipantsForEvent(eventId).length;
+      if (currentCount <= 1) {
+        console.error('No se puede eliminar el último participante');
+        return false;
+      }
+      
+      // Filtrar relaciones que no coincidan con estos criterios
+      setRelations(prev =>
+        prev.filter(
+          r => !(r.eventsId === eventId && r.participantsId === participantId)
+        )
+      );
+      
+      // Obtener el total actual del evento
+      const currentEvent = events.find(e => e.id === eventId);
+      const totalGastos = currentEvent?.total || 0;
+      
+      // Calcular nuevos valores
+      const newCount = currentCount - 1;
+      const newPer = newCount > 0 ? totalGastos / newCount : 0;
+      
+      // Actualizar conteo de participantes y valor por persona
+      updateEvent(eventId, {
+        participants: newCount,
+        per: newPer
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error al remover participante:', error);
+      return false;
+    }
   };
 
   // ————— Gastos —————
@@ -96,11 +212,17 @@ export function EventProvider({ children }) {
     // suma los montos de gastos
     const totalSum = gastosArray
       .filter(g => relIds.includes(g.eventsParticipantsId))
-      .reduce((acc, g) => acc + g.monto, 0);
+      .reduce((acc, g) => {
+        // Convertir el monto de string a número, reemplazando comas por puntos
+        const monto = typeof g.monto === 'string' 
+          ? parseFloat(g.monto.replace(',', '.')) 
+          : g.monto;
+        return acc + (isNaN(monto) ? 0 : monto); // Añadir validación para evitar NaN
+      }, 0);
 
     // encuentra el evento y su cantidad de participantes
     const evt = events.find(e => e.id === eventId);
-    const count = evt ? evt.participants : 0;
+    const count = relations.filter(r => r.eventsId === eventId).length; // Calcular directamente de las relaciones
 
     // calcula per
     const perPerson = count > 0 ? totalSum / count : 0;
@@ -108,6 +230,7 @@ export function EventProvider({ children }) {
     updateEvent(eventId, {
       total: totalSum,
       per: perPerson,
+      participants: count // Actualizar también la cantidad de participantes
     });
   };
 
@@ -174,7 +297,12 @@ export function EventProvider({ children }) {
         events,
         addEvent,
         updateEvent,
+        // participantes
         participants,
+        addParticipant,
+        updateParticipant,
+        removeParticipant,
+        // relaciones
         relations,
         getParticipantsForEvent,
         addParticipantToEvent,
