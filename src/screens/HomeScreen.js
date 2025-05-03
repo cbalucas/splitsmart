@@ -22,6 +22,7 @@ import { EventContext } from '../context/EventContext';
 import commonStyles from '../styles/commonStyles';
 import homeStyles from '../styles/homeStyles';
 import colors from '../styles/colors';
+import AvatarMenu from '../components/AvatarMenu';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -261,9 +262,11 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={()=>setFilterDateActive(!filterDateActive)} style={commonStyles.filterButton}>
           <Ionicons name={filterDateActive?'today-outline':'calendar-outline'} size={24} color={filterDateActive?colors.primary:colors.textPrimary}/>
         </TouchableOpacity>
-        <TouchableOpacity onPress={logout} style={{marginLeft:16}}>
-          <Image source={require('../assets/avatar.png')} style={homeStyles.avatar}/>
-        </TouchableOpacity>
+        
+        {/* Avatar con menú desplegable */}
+        <View style={{marginLeft: 16}}>
+          <AvatarMenu logout={logout} />
+        </View>
       </View>
 
       {/* Lista de eventos */}

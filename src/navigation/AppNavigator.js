@@ -2,6 +2,7 @@
 import React, { useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AuthStack from './AuthStack';
 import AppTabs from './AppTabs';
@@ -15,27 +16,38 @@ export default function AppNavigator() {
   const { user } = useContext(AuthContext);
 
   return (
-    <NavigationContainer>
-      {user ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {/* Tus tabs principales */}
-          <Stack.Screen name="Tabs" component={AppTabs} />
-
-          {/* La pantalla de gastos */}
-          <Stack.Screen
-            name="CreateExpense"
-            component={CreateExpenseScreen}
-            options={{
-              headerShown: true,
-              headerTitle: 'Gastos del Evento',
-              headerStyle: { backgroundColor: '#1F2230' },
-              headerTintColor: '#FFF',
+    <SafeAreaProvider>
+      <NavigationContainer>
+        {user ? (
+          <Stack.Navigator 
+            screenOptions={{ 
+              headerShown: false,
+              safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
             }}
-          />
-        </Stack.Navigator>
-      ) : (
-        <AuthStack />
-      )}
-    </NavigationContainer>
+          >
+            {/* Tus tabs principales */}
+            <Stack.Screen name="Tabs" component={AppTabs} />
+
+            {/* La pantalla de gastos */}
+            <Stack.Screen
+              name="CreateExpense"
+              component={CreateExpenseScreen}
+              options={() => ({
+                headerShown: true,
+                headerTitle: 'Gastos del Evento',
+                headerStyle: { 
+                  backgroundColor: '#1F2230',
+                  height: 60, // Altura fija simplificada
+                },
+                headerTintColor: '#FFF',
+                headerStatusBarHeight: 40, // Espacio adicional para la barra de estado
+              })}
+            />
+          </Stack.Navigator>
+        ) : (
+          <AuthStack />
+        )}
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
