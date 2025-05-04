@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useContext, useEffect, useLayoutEffect, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  BackHandler, // Importar BackHandler
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
@@ -56,16 +57,42 @@ export default function ParticipantsScreen() {
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
 
+  // Función para navegar al Home
+  const goToHome = useCallback(() => {
+    navigation.navigate('Tabs', {
+      screen: 'Home',
+      // No pasamos parámetros adicionales para evitar que se abra automáticamente algún modal
+    });
+  }, [navigation]);
+
+  // Manejo del botón de retroceso hardware
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Si hay algún modal abierto, ciérralo en lugar de navegar
+      if (modalVisible) {
+        setModalVisible(false);
+        return true; // Evita el comportamiento predeterminado
+      }
+      if (formExpanded) {
+        setFormExpanded(false);
+        return true; // Evita el comportamiento predeterminado
+      }
+      
+      // Si no hay modales abiertos, navega al Home
+      goToHome();
+      return true; // Evita el comportamiento predeterminado
+    });
+
+    // Limpiar el listener cuando el componente se desmonta
+    return () => backHandler.remove();
+  }, [goToHome, modalVisible, formExpanded]);
+
   useLayoutEffect(() => {
     if (eventId) {
       navigation.setOptions({
         headerLeft: () => (
           <TouchableOpacity 
-            onPress={() => {
-              navigation.navigate('Tabs', {
-                screen: 'Home',
-              });
-            }} 
+            onPress={goToHome} 
             style={{ marginLeft: 16 }}
           >
             <Ionicons name="arrow-back-outline" size={24} color={colors.textPrimary} />
@@ -74,7 +101,7 @@ export default function ParticipantsScreen() {
         title: currentEvent ? `Participantes - ${currentEvent.name}` : 'Participantes'
       });
     }
-  }, [navigation, eventId, currentEvent]);
+  }, [navigation, eventId, currentEvent, goToHome]);
 
   const eventParticipants = eventId ? getParticipantsForEvent(eventId) : [];
   

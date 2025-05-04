@@ -10,6 +10,7 @@ import {
   Modal,
   Keyboard,
   Alert,
+  BackHandler, // Importar BackHandler
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -119,12 +120,30 @@ export default function CreateExpenseScreen() {
 
   // Intercepta hardware back
   useEffect(() => {
-    const unsub = navigation.addListener('beforeRemove', e => {
-      e.preventDefault();
+    // Maneja el botón físico de retroceso
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Si hay algún modal abierto, ciérralo en lugar de navegar
+      if (modalVisible) {
+        closeModal();
+        return true; // Evita el comportamiento predeterminado
+      }
+      if (formExpanded) {
+        setFormExpanded(false);
+        return true; // Evita el comportamiento predeterminado
+      }
+      if (showPartModal) {
+        setShowPartModal(false);
+        return true; // Evita el comportamiento predeterminado
+      }
+      
+      // Si no hay modales abiertos, navega al Home
       returnToEvent();
+      return true; // Evita el comportamiento predeterminado
     });
-    return unsub;
-  }, [navigation, returnToEvent]);
+
+    // Limpiar el listener cuando el componente se desmonta
+    return () => backHandler.remove();
+  }, [navigation, returnToEvent, modalVisible, formExpanded, showPartModal]);
 
   // Abre detalle/edición
   const openModal = expense => {
