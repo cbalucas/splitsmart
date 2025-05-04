@@ -7,6 +7,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import AuthStack from './AuthStack';
 import AppTabs from './AppTabs';
 import CreateExpenseScreen from '../screens/CreateExpenseScreen';
+import CreateEventScreen from '../screens/CreateEventScreen';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -41,6 +42,22 @@ export default function AppNavigator() {
                 },
                 headerTintColor: '#FFF',
                 headerStatusBarHeight: 40, // Espacio adicional para la barra de estado
+              })}
+            />
+            
+            {/* Mantener la pantalla de eventos como ruta para casos específicos */}
+            <Stack.Screen
+              name="CreateEvent"
+              component={CreateEventScreen}
+              options={() => ({
+                headerShown: true,
+                headerTitle: 'Nuevo Evento',
+                headerStyle: { 
+                  backgroundColor: '#1F2230',
+                  height: 60,
+                },
+                headerTintColor: '#FFF',
+                headerStatusBarHeight: 40,
               })}
             />
           </Stack.Navigator>

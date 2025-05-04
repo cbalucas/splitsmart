@@ -3,7 +3,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/HomeScreen';
-import CreateEventScreen from '../screens/CreateEventScreen';
 import ParticipantsScreen from '../screens/ParticipantsScreen';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import colors from '../styles/colors';
@@ -28,7 +27,6 @@ export default function AppTabs() {
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === 'Home') iconName = 'home-outline';
-          if (route.name === 'CreateEvent') iconName = 'add-circle-outline';
           if (route.name === 'Participants') iconName = 'people-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -44,11 +42,6 @@ export default function AppTabs() {
         name="Home" 
         component={HomeScreen} 
         options={{ title: 'Eventos' }}
-      />
-      <Tab.Screen 
-        name="CreateEvent" 
-        component={CreateEventScreen} 
-        options={{ title: 'Nuevo Evento' }} 
       />
       <Tab.Screen 
         name="Participants" 
