@@ -9,6 +9,7 @@ import {
   FlatList,
   Modal,
   Keyboard,
+  Alert,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -60,6 +61,33 @@ export default function CreateExpenseScreen() {
   const [selectedPart, setSelectedPart] = useState(null);
   const [date, setDate] = useState(todayStr);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Estado para validaciones
+  const [errors, setErrors] = useState({
+    descripcion: false,
+    monto: false,
+    participant: false
+  });
+
+  // Resetear el formulario y limpiar errores
+  const resetForm = () => {
+    setDescripcion('');
+    setMonto('');
+    setSelectedPart(null);
+    setDate(new Date().toISOString().split('T')[0]); // Fecha actual
+    setErrors({
+      descripcion: false,
+      monto: false,
+      participant: false
+    });
+  };
+
+  // Preparar nuevo formulario al abrir el modal
+  useEffect(() => {
+    if (formExpanded) {
+      resetForm();
+    }
+  }, [formExpanded]);
 
   // Modal picker de participante
   const [showPartModal, setShowPartModal] = useState(false);
@@ -147,57 +175,84 @@ export default function CreateExpenseScreen() {
       maximumFractionDigits: 2,
     });
     return (
-      <TouchableOpacity style={expenseStyles.card} onPress={() => openModal(item)}>
-        <View style={expenseStyles.iconColumn}>
-          <Ionicons name="document-text-outline" size={32} color={colors.textPrimary} />
-        </View>
-        <View style={expenseStyles.infoColumn}>
-          <Text style={expenseStyles.descText}>{item.descripcion}</Text>
-          <Text style={expenseStyles.payerText}>{payer?.name}</Text>
-          <Text style={expenseStyles.dateText}>{item.date}</Text>
-        </View>
-        <View style={expenseStyles.actionsColumn}>
-          <Text style={expenseStyles.amountText}>${amountFmt}</Text>
-          <TouchableOpacity onPress={() => removeGasto(item.id)} style={expenseStyles.deleteBtn}>
-            <Ionicons name="trash-outline" size={24} color={colors.danger} />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+      <View style={expenseStyles.cardContainer}>
+        <TouchableOpacity style={expenseStyles.card} onPress={() => openModal(item)}>
+          <View style={expenseStyles.cardContent}>
+            <Ionicons name="document-text-outline" size={40} color={colors.textPrimary} style={expenseStyles.eventIcon} />
+            <View style={expenseStyles.eventInfo}>
+              <Text style={expenseStyles.eventName}>{item.descripcion}</Text>
+              <Text style={expenseStyles.eventPayerName}>{payer?.name || 'Sin asignar'}</Text>
+            </View>
+            <View style={expenseStyles.amounts}>
+              <View style={expenseStyles.amountRow}>
+                <Text style={expenseStyles.amountText}>${amountFmt}</Text>
+                <TouchableOpacity onPress={(e) => {
+                    e.stopPropagation();
+                    removeGasto(item.id);
+                  }} 
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
     );
   };
 
-  // Agregar nuevo gasto
+  // Agregar nuevo gasto con validación
   const saveNew = () => {
+    // Validar campos obligatorios
+    const newErrors = {
+      descripcion: !descripcion.trim(),
+      monto: !monto.trim() || isNaN(parseFloat(monto)) || parseFloat(monto) <= 0,
+      participant: !selectedPart
+    };
+
+    setErrors(newErrors);
+
+    // Si hay errores, detener la operación
+    if (Object.values(newErrors).some(error => error)) {
+      return Alert.alert('Error', 'Por favor, completa los campos obligatorios correctamente.');
+    }
+
     const relId = relations.find(
       (r) => r.eventsId === eventId && r.participantsId === selectedPart
     )?.id;
+
     addGasto({
       descripcion,
       monto: parseFloat(monto) || 0,
       date,
       eventsParticipantsId: relId,
     });
+
     // Reset formulario
-    setDescripcion('');
-    setMonto('');
-    setDate(todayStr);
-    setSelectedPart(null);
+    resetForm();
     Keyboard.dismiss();
     setFormExpanded(false);
   };
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      <View style={commonStyles.content}>
-        {/* Filtro */}
+      {/* Header con búsqueda */}
+      <View style={commonStyles.header}>
         <TextInput
-          placeholder="Filtrar por descripción o participante..."
+          placeholder="Buscar gasto"
           placeholderTextColor={colors.textSecondary}
-          style={commonStyles.filterInput}
           value={filterText}
           onChangeText={setFilterText}
+          style={commonStyles.searchInput}
         />
+        {filterText !== "" && (
+          <TouchableOpacity onPress={() => setFilterText("")} style={commonStyles.clearButton}>
+            <Ionicons name="close-circle" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
+      </View>
 
+      <View style={commonStyles.content}>
         {/* Lista de gastos */}
         <FlatList
           data={filteredGastos}
@@ -230,36 +285,54 @@ export default function CreateExpenseScreen() {
         <View style={commonStyles.modalOverlay}>
           <View style={commonStyles.modalContent}>
             <View style={commonStyles.modalHeader}>
-              <Text style={commonStyles.modalTitle}>Formulario Carga Gasto</Text>
-              <TouchableOpacity onPress={() => setFormExpanded(false)}>
-                <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
-              </TouchableOpacity>
+              <Text style={commonStyles.modalTitle}>Carga de Gasto</Text>
             </View>
 
             <View style={commonStyles.inputRow}>
               <Ionicons
                 name="document-text-outline"
                 size={20}
-                color={colors.textPrimary}
+                color={descripcion ? colors.primary : (errors.descripcion ? colors.danger : colors.textPrimary)}
                 style={expenseStyles.icon}
               />
               <TextInput
-                style={expenseStyles.input}
-                placeholder="Descripción"
-                placeholderTextColor={colors.textSecondary}
+                style={[
+                  expenseStyles.input,
+                  errors.descripcion && expenseStyles.inputError
+                ]}
+                placeholder="Descripción *"
+                placeholderTextColor={errors.descripcion ? colors.danger : colors.textSecondary}
                 value={descripcion}
-                onChangeText={setDescripcion}
+                onChangeText={(text) => {
+                  setDescripcion(text);
+                  if (text.trim()) {
+                    setErrors(prev => ({...prev, descripcion: false}));
+                  }
+                }}
               />
             </View>
 
             <View style={commonStyles.inputRow}>
-              <Ionicons name="cash-outline" size={20} color={colors.textPrimary} style={expenseStyles.icon} />
+              <Ionicons 
+                name="cash-outline" 
+                size={20} 
+                color={monto ? colors.primary : (errors.monto ? colors.danger : colors.textPrimary)} 
+                style={expenseStyles.icon} 
+              />
               <TextInput
-                style={expenseStyles.input}
-                placeholder="Monto"
-                placeholderTextColor={colors.textSecondary}
+                style={[
+                  expenseStyles.input,
+                  errors.monto && expenseStyles.inputError
+                ]}
+                placeholder="Monto *"
+                placeholderTextColor={errors.monto ? colors.danger : colors.textSecondary}
                 value={monto}
-                onChangeText={setMonto}
+                onChangeText={(text) => {
+                  setMonto(text);
+                  if (text.trim() && !isNaN(parseFloat(text)) && parseFloat(text) > 0) {
+                    setErrors(prev => ({...prev, monto: false}));
+                  }
+                }}
                 keyboardType="decimal-pad"
               />
             </View>
@@ -268,17 +341,27 @@ export default function CreateExpenseScreen() {
               <Ionicons
                 name="people-outline"
                 size={20}
-                color={colors.textPrimary}
+                color={selectedPart ? colors.primary : (errors.participant ? colors.danger : colors.textPrimary)}
                 style={expenseStyles.icon}
               />
               <TouchableOpacity
-                style={expenseStyles.input}
+                style={[
+                  expenseStyles.input,
+                  errors.participant && expenseStyles.inputError
+                ]}
                 onPress={() => setShowPartModal(true)}
               >
-                <Text style={{ color: selectedPart ? colors.textPrimary : colors.textSecondary, paddingVertical: 8 }}>
+                <Text 
+                  style={{ 
+                    color: selectedPart 
+                      ? colors.textPrimary 
+                      : (errors.participant ? colors.danger : colors.textSecondary), 
+                    paddingVertical: 8 
+                  }}
+                >
                   {selectedPart
                     ? evtParticipants.find(p => p.id === selectedPart)?.name
-                    : 'Seleccionar participante'}
+                    : 'Seleccionar participante *'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -287,7 +370,7 @@ export default function CreateExpenseScreen() {
               <Ionicons
                 name="calendar-number-outline"
                 size={20}
-                color={colors.textPrimary}
+                color={colors.primary}
                 style={expenseStyles.icon}
               />
               <TextInput
@@ -298,7 +381,11 @@ export default function CreateExpenseScreen() {
                 onChangeText={setDate}
               />
               <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-                <Ionicons name="calendar-outline" size={24} color={colors.primary} />
+                <Ionicons 
+                  name="calendar-outline" 
+                  size={24} 
+                  color={colors.primary} 
+                />
               </TouchableOpacity>
             </View>
 
@@ -311,12 +398,20 @@ export default function CreateExpenseScreen() {
               />
             )}
 
-            <TouchableOpacity
-              style={commonStyles.saveButton}
-              onPress={saveNew}
-            >
-              <Text style={commonStyles.saveButtonText}>Guardar Gasto</Text>
-            </TouchableOpacity>
+            <View style={expenseStyles.buttonRow}>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.cancelBtn]}
+                onPress={() => setFormExpanded(false)}
+              >
+                <Text style={commonStyles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.saveBtn]}
+                onPress={saveNew}
+              >
+                <Text style={commonStyles.buttonText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -325,7 +420,10 @@ export default function CreateExpenseScreen() {
       <Modal transparent visible={showPartModal} animationType="slide">
         <View style={commonStyles.modalOverlay}>
           <View style={commonStyles.modalContent}>
-            <Text style={commonStyles.modalTitle}>Seleccionar Participante</Text>
+            <View style={commonStyles.modalHeader}>
+              <Text style={commonStyles.modalTitle}>Seleccionar Participante</Text>
+            </View>
+            
             <TextInput
               style={expenseStyles.modalSearch}
               placeholder="Buscar participante..."
@@ -344,19 +442,26 @@ export default function CreateExpenseScreen() {
                   onPress={() => {
                     setSelectedPart(item.id);
                     setShowPartModal(false);
+                    // Si había un error, limpiarlo cuando se selecciona un participante
+                    if (errors.participant) {
+                      setErrors(prev => ({...prev, participant: false}));
+                    }
                   }}
                 >
                   <Ionicons name="person-outline" size={20} color={colors.textPrimary} />
                   <Text style={expenseStyles.partName}>{item.name}</Text>
                 </TouchableOpacity>
               )}
+              style={{ maxHeight: 250 }}
             />
-            <TouchableOpacity
-              style={commonStyles.closeButton}
-              onPress={() => setShowPartModal(false)}
-            >
-              <Text style={commonStyles.closeButtonText}>Cerrar</Text>
-            </TouchableOpacity>
+            <View style={expenseStyles.buttonRow}>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.cancelBtn, {flex: 1}]}
+                onPress={() => setShowPartModal(false)}
+              >
+                <Text style={commonStyles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -472,3 +577,4 @@ export default function CreateExpenseScreen() {
     </SafeAreaView>
   );
 }
+

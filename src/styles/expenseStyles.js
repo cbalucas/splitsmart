@@ -3,61 +3,59 @@ import { StyleSheet } from 'react-native';
 import colors from './colors';
 
 export default StyleSheet.create({
-  // Lista de gastos
-  filterInput: {
-    backgroundColor: colors.input,
+  // Tarjeta de gasto - Estilo unificado con eventos
+  cardContainer: {
+    marginBottom: 12,
+    marginTop: 2, // Margen superior para separar de la barra de búsqueda
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.textPrimary,
-    marginVertical: 16
+    overflow: 'hidden'
   },
-  
-  // Tarjeta de gasto
   card: {
-    flexDirection: 'row',
     backgroundColor: colors.card,
-    marginVertical: 4,
-    padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  iconColumn: { 
-    marginRight: 12 
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12
   },
-  infoColumn: { 
-    flex: 2 
+  eventIcon: {
+    marginRight: 12
   },
-  descText: { 
-    color: colors.textPrimary, 
-    fontWeight: 'bold', 
-    fontSize: 16 
+  eventInfo: {
+    flex: 2
   },
-  payerText: { 
-    color: colors.textPrimary, 
-    fontSize: 14, 
-    marginTop: 4 
+  eventName: {
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+    fontSize: 16
   },
-  dateText: { 
-    color: colors.textSecondary, 
-    fontSize: 12, 
-    marginTop: 2 
+  eventDate: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginTop: 4
   },
-  actionsColumn: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  eventPayerName: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginTop: 4
   },
-  amountText: { 
-    color: colors.primary, 
-    fontWeight: 'bold', 
-    marginRight: 8 
+  amounts: {
+    alignItems: 'flex-end'
   },
-  deleteBtn: { 
-    padding: 4 
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  empty: { 
-    color: colors.textPrimary, 
-    textAlign: 'center', 
-    marginTop: 32 
+  amountText: {
+    color: colors.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginRight: 8
+  },
+  deleteButton: {
+    padding: 4,
   },
   
   // Campos de entrada y formularios
@@ -68,7 +66,15 @@ export default StyleSheet.create({
     flex: 1,
     color: colors.textPrimary,
     paddingVertical: 8,
-    paddingHorizontal: 0
+    paddingHorizontal: 12,
+    backgroundColor: colors.input,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent' // Por defecto transparente, se volverá rojo con error
+  },
+  inputError: {
+    borderColor: colors.danger,
+    borderWidth: 1
   },
   buttonRow: {
     flexDirection: 'row',
@@ -76,36 +82,14 @@ export default StyleSheet.create({
     marginTop: 16
   },
   
-  // Modal de formulario
-  formModalOverlay: { 
-    flex: 1, 
-    backgroundColor: colors.overlay, 
-    justifyContent: 'center',
-    padding: 16 
-  },
-  formModalContent: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16
-  },
-  formModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  formTitle: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: 'bold'
+  // Mensaje vacío
+  empty: { 
+    color: colors.textSecondary, 
+    textAlign: 'center', 
+    marginTop: 32 
   },
   
   // Modal de participantes
-  participantModalContent: {
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 16
-  },
   modalSearch: {
     backgroundColor: colors.input,
     borderRadius: 8,
@@ -122,16 +106,5 @@ export default StyleSheet.create({
     color: colors.textPrimary, 
     marginLeft: 8, 
     flex: 1 
-  },
-  modalClose: {
-    backgroundColor: colors.disabled,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginTop: 8
-  },
-  modalCloseText: { 
-    color: colors.textPrimary, 
-    fontWeight: 'bold' 
   }
 });

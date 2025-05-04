@@ -37,6 +37,11 @@ export default function ParticipantsScreen() {
   const [search, setSearch] = useState('');
   const [showOnlyEventParticipants, setShowOnlyEventParticipants] = useState(!fromTabBar);
 
+  // Estados para manejo de errores de validación
+  const [errors, setErrors] = useState({
+    name: false
+  });
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -85,13 +90,29 @@ export default function ParticipantsScreen() {
     return eventParticipants.some(p => p.id === participantId);
   };
 
-  const collapseForm = () => {
-    setFormExpanded(false);
+  // Resetear los valores del formulario sin cerrarlo
+  const resetFormValues = () => {
     setNewName('');
     setNewAlias('');
     setNewPhone('');
     setNewEmail('');
+    setErrors({
+      name: false
+    });
   };
+
+  // Cerrar el formulario y resetear valores
+  const collapseForm = () => {
+    setFormExpanded(false);
+    resetFormValues();
+  };
+
+  // Preparar nuevo formulario al abrir el modal
+  useEffect(() => {
+    if (formExpanded) {
+      resetFormValues(); // Solo resetea valores, no cierra el modal
+    }
+  }, [formExpanded]);
 
   const openView = p => {
     setSelectedId(p.id);
@@ -108,7 +129,9 @@ export default function ParticipantsScreen() {
   };
 
   const saveModal = () => {
+    // Validar campos obligatorios
     if (!name.trim()) {
+      setErrors(prev => ({...prev, name: true}));
       Alert.alert('Error', 'El nombre es obligatorio');
       return;
     }
@@ -123,6 +146,7 @@ export default function ParticipantsScreen() {
       
       if (result) {
         Alert.alert('Éxito', 'Participante actualizado correctamente');
+        setErrors({name: false});
         setIsEditing(false);
         setModalVisible(false);
       } else {
@@ -166,9 +190,16 @@ export default function ParticipantsScreen() {
   };
 
   const addNew = () => {
-    if (!newName.trim()) {
-      Alert.alert('Error', 'El nombre es obligatorio');
-      return;
+    // Validar campos obligatorios
+    const newErrors = {
+      name: !newName.trim()
+    };
+    
+    setErrors(newErrors);
+    
+    // Si hay errores, detener la operación
+    if (Object.values(newErrors).some(error => error)) {
+      return Alert.alert('Error', 'Por favor, completa el nombre del participante');
     }
     
     try {
@@ -303,38 +334,98 @@ export default function ParticipantsScreen() {
         <View style={commonStyles.modalOverlay}>
           <View style={commonStyles.modalContent}>
             <View style={commonStyles.modalHeader}>
-              <Text style={commonStyles.modalTitle}>Formulario Carga Participante</Text>
-              <TouchableOpacity onPress={() => setFormExpanded(false)}>
-                <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
-              </TouchableOpacity>
+              <Text style={commonStyles.modalTitle}>Crear Participante</Text>
             </View>
             
-            {[
-              { icon: 'person-outline', value: newName, setter: setNewName, placeholder: 'Nombre' },
-              { icon: 'wallet-outline', value: newAlias, setter: setNewAlias, placeholder: 'Alias CBU' },
-              { icon: 'phone-portrait-outline', value: newPhone, setter: setNewPhone, placeholder: 'Teléfono', keyboardType: 'phone-pad' },
-              { icon: 'at-outline', value: newEmail, setter: setNewEmail, placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
-            ].map((f, i) => (
-              <View key={i} style={commonStyles.inputRow}>
-                <Ionicons name={f.icon} size={20} color={colors.textPrimary} style={participantStyles.icon} />
-                <TextInput
-                  placeholder={f.placeholder}
-                  placeholderTextColor={colors.textSecondary}
-                  style={participantStyles.input}
-                  value={f.value}
-                  onChangeText={f.setter}
-                  keyboardType={f.keyboardType}
-                  autoCapitalize={f.autoCapitalize}
-                />
-              </View>
-            ))}
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="person-outline" 
+                size={20} 
+                color={newName ? colors.primary : (errors.name ? colors.danger : colors.textPrimary)}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                style={[
+                  participantStyles.input,
+                  errors.name && participantStyles.inputError
+                ]}
+                placeholder="Nombre *"
+                placeholderTextColor={errors.name ? colors.danger : colors.textSecondary}
+                value={newName}
+                onChangeText={(text) => {
+                  setNewName(text);
+                  if (text.trim()) {
+                    setErrors(prev => ({...prev, name: false}));
+                  }
+                }}
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="wallet-outline" 
+                size={20} 
+                color={newAlias ? colors.primary : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                style={participantStyles.input}
+                placeholder="Alias CBU"
+                placeholderTextColor={colors.textSecondary}
+                value={newAlias}
+                onChangeText={setNewAlias}
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="phone-portrait-outline" 
+                size={20} 
+                color={newPhone ? colors.primary : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                style={participantStyles.input}
+                placeholder="Teléfono"
+                placeholderTextColor={colors.textSecondary}
+                value={newPhone}
+                onChangeText={setNewPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="at-outline" 
+                size={20} 
+                color={newEmail ? colors.primary : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                style={participantStyles.input}
+                placeholder="Email"
+                placeholderTextColor={colors.textSecondary}
+                value={newEmail}
+                onChangeText={setNewEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-            <TouchableOpacity
-              style={commonStyles.saveButton}
-              onPress={addNew}
-            >
-              <Text style={commonStyles.saveButtonText}>Guardar</Text>
-            </TouchableOpacity>
+            <View style={participantStyles.buttonRow}>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.cancelBtn]}
+                onPress={() => collapseForm()}
+              >
+                <Text style={commonStyles.buttonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.saveBtn]}
+                onPress={addNew}
+              >
+                <Text style={commonStyles.buttonText}>Guardar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -349,7 +440,7 @@ export default function ParticipantsScreen() {
           <View style={commonStyles.modalContent}>
             <View style={commonStyles.modalHeader}>
               <Text style={commonStyles.modalTitle}>
-                {isEditing ? 'Editar Participante' : 'Participante'}
+                {isEditing ? 'Editar Participante' : 'Detalle Participante'}
               </Text>
               {!isEditing && (
                 <TouchableOpacity onPress={openEdit}>
@@ -357,31 +448,93 @@ export default function ParticipantsScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            {[
-              { icon: 'person-outline', value: name, setter: setName, placeholder: 'Nombre' },
-              { icon: 'wallet-outline', value: alias, setter: setAlias, placeholder: 'Alias CBU' },
-              { icon: 'phone-portrait-outline', value: phone, setter: setPhone, placeholder: 'Teléfono', keyboardType: 'phone-pad' },
-              { icon: 'at-outline', value: email, setter: setEmail, placeholder: 'Email', keyboardType: 'email-address', autoCapitalize: 'none' },
-            ].map((f, i) => (
-              <View key={i} style={commonStyles.inputRow}>
-                <Ionicons name={f.icon} size={20} color={colors.textPrimary} style={participantStyles.icon} />
-                <TextInput
-                  placeholder={f.placeholder}
-                  placeholderTextColor={colors.textSecondary}
-                  style={participantStyles.input}
-                  value={f.value}
-                  onChangeText={f.setter}
-                  editable={isEditing}
-                  keyboardType={f.keyboardType}
-                  autoCapitalize={f.autoCapitalize}
-                />
-              </View>
-            ))}
-            {isEditing && (
-              <View style={participantStyles.buttonRow}>
-                <TouchableOpacity
-                  style={[commonStyles.button, commonStyles.cancelBtn]}
-                  onPress={() => {
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="person-outline" 
+                size={20} 
+                color={isEditing 
+                  ? (name ? colors.primary : (errors.name ? colors.danger : colors.textPrimary)) 
+                  : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                style={[
+                  participantStyles.input,
+                  isEditing && errors.name && participantStyles.inputError
+                ]}
+                placeholder="Nombre *"
+                placeholderTextColor={isEditing && errors.name ? colors.danger : colors.textSecondary}
+                value={name}
+                onChangeText={(text) => {
+                  setName(text);
+                  if (text.trim()) {
+                    setErrors(prev => ({...prev, name: false}));
+                  }
+                }}
+                editable={isEditing}
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="wallet-outline" 
+                size={20} 
+                color={isEditing ? (alias ? colors.primary : colors.textPrimary) : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                placeholder="Alias CBU"
+                placeholderTextColor={colors.textSecondary}
+                style={participantStyles.input}
+                value={alias}
+                onChangeText={setAlias}
+                editable={isEditing}
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="phone-portrait-outline" 
+                size={20} 
+                color={isEditing ? (phone ? colors.primary : colors.textPrimary) : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                placeholder="Teléfono"
+                placeholderTextColor={colors.textSecondary}
+                style={participantStyles.input}
+                value={phone}
+                onChangeText={setPhone}
+                editable={isEditing}
+                keyboardType="phone-pad"
+              />
+            </View>
+            
+            <View style={commonStyles.inputRow}>
+              <Ionicons 
+                name="at-outline" 
+                size={20} 
+                color={isEditing ? (email ? colors.primary : colors.textPrimary) : colors.textPrimary}
+                style={participantStyles.icon} 
+              />
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor={colors.textSecondary}
+                style={participantStyles.input}
+                value={email}
+                onChangeText={setEmail}
+                editable={isEditing}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            
+            <View style={participantStyles.buttonRow}>
+              <TouchableOpacity
+                style={[commonStyles.button, commonStyles.cancelBtn]}
+                onPress={() => {
+                  if (isEditing) {
                     setIsEditing(false);
                     const participant = participants.find(p => p.id === selectedId);
                     if (participant) {
@@ -390,28 +543,22 @@ export default function ParticipantsScreen() {
                       setPhone(participant.phone || '');
                       setEmail(participant.email || '');
                     }
-                  }}
-                >
-                  <Text style={commonStyles.buttonText}>Cancelar</Text>
-                </TouchableOpacity>
+                  } else {
+                    setModalVisible(false);
+                  }
+                }}
+              >
+                <Text style={commonStyles.buttonText}>{isEditing ? 'Cancelar' : 'Cerrar'}</Text>
+              </TouchableOpacity>
+              {isEditing && (
                 <TouchableOpacity
                   style={[commonStyles.button, commonStyles.saveBtn]}
                   onPress={saveModal}
                 >
                   <Text style={commonStyles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
-              </View>
-            )}
-            {!isEditing && (
-              <View style={participantStyles.singleButtonContainer}>
-                <TouchableOpacity
-                  style={participantStyles.closeButtonFull}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={participantStyles.closeButtonTextFixed}>Cerrar</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         </View>
       </Modal>

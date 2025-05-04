@@ -45,7 +45,15 @@ export default StyleSheet.create({
     flex: 1,
     color: colors.textPrimary,
     paddingVertical: 8,
-    paddingHorizontal: 0
+    paddingHorizontal: 12,
+    backgroundColor: colors.input,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent' // Por defecto transparente, se volverá rojo con error
+  },
+  inputError: {
+    borderColor: colors.danger,
+    borderWidth: 1
   },
   buttonRow: {
     flexDirection: 'row',
