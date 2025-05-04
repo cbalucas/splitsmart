@@ -8,6 +8,7 @@ import AuthStack from './AuthStack';
 import AppTabs from './AppTabs';
 import CreateExpenseScreen from '../screens/CreateExpenseScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
+import ExpenseSummaryScreen from '../screens/ExpenseSummaryScreen';
 
 import { AuthContext } from '../context/AuthContext';
 
@@ -52,6 +53,22 @@ export default function AppNavigator() {
               options={() => ({
                 headerShown: true,
                 headerTitle: 'Nuevo Evento',
+                headerStyle: { 
+                  backgroundColor: '#1F2230',
+                  height: 60,
+                },
+                headerTintColor: '#FFF',
+                headerStatusBarHeight: 40,
+              })}
+            />
+            
+            {/* Pantalla de resumen de gastos y pagos */}
+            <Stack.Screen
+              name="ExpenseSummary"
+              component={ExpenseSummaryScreen}
+              options={() => ({
+                headerShown: true,
+                headerTitle: 'Resumen',
                 headerStyle: { 
                   backgroundColor: '#1F2230',
                   height: 60,

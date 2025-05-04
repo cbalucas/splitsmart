@@ -267,6 +267,12 @@ export default function HomeScreen() {
           >
             <Ionicons name="people-outline" size={20} color={participantesClr} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={homeStyles.actionButton}
+            onPress={() => navigation.navigate('ExpenseSummary', { eventId: item.id })}
+          >
+            <Ionicons name="document-text-outline" size={20} color={tieneGastos ? colors.secondary : colors.textDisabled} />
+          </TouchableOpacity>
           <View style={homeStyles.actionButton}>
             <Ionicons name="logo-whatsapp" size={20} color={whatsappClr} />
           </View>

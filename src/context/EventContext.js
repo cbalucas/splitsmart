@@ -199,6 +199,22 @@ export function EventProvider({ children }) {
       return false;
     }
   };
+  
+  // Obtener los gastos para un evento específico
+  const getGastosForEvent = (eventId) => {
+    // Obtener los IDs de relación para este evento
+    const relIds = relations
+      .filter(r => r.eventsId === eventId)
+      .map(r => r.id);
+    
+    // Filtrar los gastos que corresponden a estas relaciones
+    return gastos.filter(g => relIds.includes(g.eventsParticipantsId));
+  };
+  
+  // Obtener un participante por su ID
+  const getParticipantById = (participantId) => {
+    return participants.find(p => p.id === participantId);
+  };
 
   // ————— Gastos —————
 
@@ -282,14 +298,6 @@ export function EventProvider({ children }) {
     });
   };
 
-  // 4) Obtiene todos los gastos de un evento
-  const getGastosForEvent = eventId => {
-    const relIds = relations
-      .filter(r => r.eventsId === eventId)
-      .map(r => r.id);
-    return gastos.filter(g => relIds.includes(g.eventsParticipantsId));
-  };
-
   return (
     <EventContext.Provider
       value={{
@@ -302,6 +310,7 @@ export function EventProvider({ children }) {
         addParticipant,
         updateParticipant,
         removeParticipant,
+        getParticipantById,
         // relaciones
         relations,
         getParticipantsForEvent,
