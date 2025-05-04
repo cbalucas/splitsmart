@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   Share,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -35,16 +36,24 @@ export default function ExpenseSummaryScreen() {
     getGastosForEvent,
     getParticipantById,
     relations,
+    updatePagoEstado,
+    getPagosEstado,
   } = useContext(EventContext);
 
   // Estados para controlar las secciones desplegables
   const [showGastos, setShowGastos] = useState(false);
   const [showGastosPorPersona, setShowGastosPorPersona] = useState(false);
+  const [showParticipantes, setShowParticipantes] = useState(false);
+
+  // Estado para el modal de pagos
+  const [pagoModalVisible, setPagoModalVisible] = useState(false);
+  const [selectedPago, setSelectedPago] = useState(null);
 
   // Obtenemos los datos necesarios
   const event = events.find(e => e.id === eventId);
   const participants = getParticipantsForEvent(eventId);
   const gastos = getGastosForEvent(eventId);
+  const pagosEstado = getPagosEstado(eventId);
 
   // Estado para el contenido compartible
   const [shareContent, setShareContent] = useState('');
@@ -174,37 +183,61 @@ export default function ExpenseSummaryScreen() {
     };
   }, [eventId, gastos, participants, relations, getMonto]);
 
-  // Generar el contenido para compartir una sola vez cuando cambien los datos calculados
+  // Generar el contenido para compartir con formato mejorado para WhatsApp
   useEffect(() => {
     if (!event) return;
     
-    let contenidoCompartir = `RESUMEN DE GASTOS Y PAGOS - ${event?.name || 'Evento'}\n\n`;
+    // Emoticones para el mensaje
+    const emoji = {
+      calendar: '📅',
+      money: '💰',
+      person: '👤',
+      payment: '💸',
+      check: '✅',
+    };
     
-    // Agregar fecha
-    contenidoCompartir += `Fecha: ${event?.date || ''}\n`;
-    contenidoCompartir += `Total del evento: $${formatCurrency(totalGastos)}\n`;
-    contenidoCompartir += `Gastos c/u: $${formatCurrency(promedioPorParticipante)}\n\n`;
+    let contenidoCompartir = `*RESUMEN DE GASTOS Y PAGOS* - _${event?.name || 'Evento'}_\n\n`;
+    
+    // Agregar fecha e información general
+    contenidoCompartir += `${emoji.calendar} *Fecha:* ${event?.date || ''}\n`;
+    contenidoCompartir += `${emoji.money} *Total del evento:* $${formatCurrency(totalGastos)}\n`;
+    contenidoCompartir += `${emoji.person} *Gastos c/u:* $${formatCurrency(promedioPorParticipante)}\n\n`;
     
     // Agregar gastos individuales
-    contenidoCompartir += "GASTOS POR PERSONA:\n";
+    contenidoCompartir += "*GASTOS POR PERSONA:*\n";
     participants.forEach(p => {
       const gastado = gastosPorParticipante[p.id] || 0;
       if (gastado > 0) {
-        contenidoCompartir += `${p.name}: $${formatCurrency(gastado)}\n`;
+        contenidoCompartir += `${emoji.person} _${p.name}:_ $${formatCurrency(gastado)}\n`;
       }
     });
     
-    contenidoCompartir += "\nPAGOS A REALIZAR:\n";
+    contenidoCompartir += "\n*PAGOS A REALIZAR:*\n";
     if (pagos.length === 0) {
-      contenidoCompartir += "No hay pagos pendientes\n";
+      contenidoCompartir += "${emoji.check} No hay pagos pendientes\n";
     } else {
       pagos.forEach(pago => {
-        contenidoCompartir += `${pago.deNombre} debe pagar $${formatCurrency(parseFloat(pago.monto))} a ${pago.paraNombre}\n`;
+        const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
+        const statusEmoji = isPagado ? `${emoji.check} ` : `${emoji.payment} `;
+        contenidoCompartir += `${statusEmoji}_${pago.deNombre}_ debe pagar *$${formatCurrency(parseFloat(pago.monto))}* a _${pago.paraNombre}_`;
+        
+        // Si hay un alias, agregarlo
+        const receptor = getParticipantById(pago.para);
+        if (receptor?.aliasCBU) {
+          contenidoCompartir += ` (Alias: \`${receptor.aliasCBU}\`)`;
+        }
+        
+        // Si está pagado, indicarlo
+        if (isPagado) {
+          contenidoCompartir += " - *PAGADO*";
+        }
+        
+        contenidoCompartir += "\n";
       });
     }
     
     setShareContent(contenidoCompartir);
-  }, [event, participants, totalGastos, gastosPorParticipante, pagos, promedioPorParticipante]);
+  }, [event, participants, totalGastos, gastosPorParticipante, pagos, promedioPorParticipante, pagosEstado, getParticipantById]);
 
   // Función para compartir el resumen
   const handleShare = useCallback(async () => {
@@ -222,9 +255,6 @@ export default function ExpenseSummaryScreen() {
     <SafeAreaView style={commonStyles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.primary} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>RESUMEN DE GASTOS Y PAGOS</Text>
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <Ionicons name="share-social-outline" size={24} color={colors.primary} />
@@ -325,6 +355,38 @@ export default function ExpenseSummaryScreen() {
           )}
         </View>
 
+        {/* Lista de participantes - Desplegable */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity 
+            style={styles.sectionHeader} 
+            onPress={() => setShowParticipantes(!showParticipantes)}
+          >
+            <Text style={styles.sectionTitle}>PARTICIPANTES</Text>
+            <Ionicons 
+              name={showParticipantes ? "chevron-up-outline" : "chevron-down-outline"} 
+              size={24} 
+              color={colors.primary} 
+            />
+          </TouchableOpacity>
+          
+          {showParticipantes && (
+            <>
+              {participants.length === 0 ? (
+                <Text style={styles.noData}>No hay participantes registrados</Text>
+              ) : (
+                participants.map(participante => (
+                  <View key={participante.id} style={styles.participanteItem}>
+                    <Text style={styles.participanteNombre}>
+                      <Ionicons name="person-outline" size={16} color={colors.textSecondary} style={{marginRight: 6}} />
+                      {participante.name}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </>
+          )}
+        </View>
+
         {/* Pagos a realizar */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>PAGOS A REALIZAR</Text>
@@ -332,18 +394,50 @@ export default function ExpenseSummaryScreen() {
             pagos.map((pago, index) => {
               const pagador = getParticipantById(pago.de);
               const receptor = getParticipantById(pago.para);
+              const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
               
               return (
-                <View key={index} style={styles.pagoItem}>
+                <TouchableOpacity
+                  key={index} 
+                  style={[styles.pagoItem, isPagado && styles.pagoPagado]}
+                  onPress={() => {
+                    setSelectedPago({
+                      id: `${pago.de}_${pago.para}_${pago.monto}`,
+                      de: pago.de,
+                      deNombre: pagador?.name || pago.deNombre,
+                      para: pago.para,
+                      paraNombre: receptor?.name || pago.paraNombre,
+                      monto: pago.monto,
+                      estadoPago: isPagado
+                    });
+                    setPagoModalVisible(true);
+                  }}
+                >
                   <View style={styles.pagoFlexContainer}>
-                    <Text style={styles.pagador}>{pagador?.name || pago.deNombre}</Text>
-                    <Text style={styles.pagoMonto}>${formatCurrency(parseFloat(pago.monto))}</Text>
-                    <Text style={styles.receptor}>{receptor?.name || pago.paraNombre}</Text>
+                    <Text style={[styles.pagador, isPagado && styles.textoInactivo]}>
+                      {pagador?.name || pago.deNombre}
+                    </Text>
+                    <View style={styles.montoContainer}>
+                      <Text style={[styles.pagoMonto, isPagado && styles.textoInactivo]}>
+                        ${formatCurrency(parseFloat(pago.monto))}
+                      </Text>
+                      {receptor?.aliasCBU && (
+                        <Text style={[styles.aliasCBU, isPagado && styles.textoInactivo]}>
+                          Alias: {receptor.aliasCBU}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={[styles.receptor, isPagado && styles.textoInactivo]}>
+                      {receptor?.name || pago.paraNombre}
+                    </Text>
                   </View>
-                  {receptor?.aliasCBU && (
-                    <Text style={styles.aliasCBU}>Alias: {receptor.aliasCBU}</Text>
+                  {isPagado && (
+                    <View style={styles.pagadoIndicator}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                      <Text style={styles.pagadoText}>Pagado</Text>
+                    </View>
                   )}
-                </View>
+                </TouchableOpacity>
               );
             })
           ) : (
@@ -354,6 +448,68 @@ export default function ExpenseSummaryScreen() {
         {/* Espacio adicional al final para que no se corte la última sección */}
         <View style={styles.bottomSpace} />
       </ScrollView>
+      
+      {/* Modal para marcar un pago como realizado */}
+      <Modal
+        transparent
+        visible={pagoModalVisible}
+        animationType="fade"
+        onRequestClose={() => setPagoModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Estado del Pago</Text>
+            </View>
+            
+            {selectedPago && (
+              <>
+                <View style={styles.pagoDetailContainer}>
+                  <Text style={styles.pagoDetailText}>
+                    <Text style={styles.pagador}>{selectedPago.deNombre}</Text>
+                    {' -> '}
+                    <Text style={styles.pagoMonto}>${formatCurrency(parseFloat(selectedPago.monto))}</Text>
+                    {' -> '}
+                    <Text style={styles.receptor}>{selectedPago.paraNombre}</Text>
+                  </Text>
+                </View>
+                
+                <View style={styles.modalButtonsRow}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, selectedPago.estadoPago ? styles.buttonInactive : styles.buttonActive]}
+                    onPress={() => {
+                      updatePagoEstado(eventId, selectedPago.id, true);
+                      setPagoModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Marcar como Pagado</Text>
+                  </TouchableOpacity>
+                  
+                  {selectedPago.estadoPago && (
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.buttonCancel]}
+                      onPress={() => {
+                        updatePagoEstado(eventId, selectedPago.id, false);
+                        setPagoModalVisible(false);
+                      }}
+                    >
+                      <Text style={styles.buttonText}>Desmarcar Pago</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+            
+            <TouchableOpacity
+              style={[styles.modalButton, styles.buttonClose]}
+              onPress={() => setPagoModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
     </SafeAreaView>
   );
 }
@@ -368,13 +524,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: {
-    padding: 8,
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.textPrimary,
+    textAlign: 'center',
+    flex: 1,
   },
   shareButton: {
     padding: 8,
@@ -485,9 +640,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  pagoPagado: {
+    backgroundColor: colors.backgroundInactive,
+  },
   pagoFlexContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  montoContainer: {
+    flex: 1,
     alignItems: 'center',
   },
   pagador: {
@@ -514,6 +676,19 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  pagadoIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  pagadoText: {
+    fontSize: 13,
+    color: colors.success,
+    marginLeft: 4,
+  },
+  textoInactivo: {
+    color: colors.textInactive,
+  },
   noPagos: {
     textAlign: 'center',
     fontSize: 15,
@@ -530,5 +705,63 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 40, // Espacio adicional al final para evitar que se corte la última sección
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 16,
+    width: '80%',
+  },
+  modalHeader: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  pagoDetailContainer: {
+    marginBottom: 16,
+  },
+  pagoDetailText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: colors.textPrimary,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  buttonActive: {
+    backgroundColor: colors.success,
+  },
+  buttonInactive: {
+    backgroundColor: colors.backgroundInactive,
+  },
+  buttonCancel: {
+    backgroundColor: colors.error,
+  },
+  buttonClose: {
+    backgroundColor: colors.primary,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+  },
 });
