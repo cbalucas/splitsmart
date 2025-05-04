@@ -1,61 +1,55 @@
 # SplitSmart: Plan de Correcciones y Mejoras
 
-## 📋 Cómo utilizar este documento
+## ORDENAR Y ACOMODAR
+<!-- Aca se colocan todas las observaciones que hasta el momento no se han clasificado ni categorizado. -->
 
-Este documento está organizado por categorías y prioridades. Para cada tarea se incluye:
 
-- **ID**: Identificador único para referencia rápida
-- **Descripción**: Explicación detallada del problema o mejora
-- **Prioridad**: Alta (🔴), Media (🟡), Baja (🟢)
-- **Estado**: Pendiente (📝), En progreso (⏳), Completado (✅), Cancelado (❌)
-- **Estimación**: Tiempo estimado para completar (horas/días)
-- **Asignado a**: Persona responsable de la tarea
-- **Notas**: Comentarios adicionales, dependencias o soluciones propuestas
+## Home
 
-## 🚀 Correcciones Urgentes
+1. Se deben desabilitar los iconos de gastos y participantes cuando un evento se encuentra con estadoEvento = false
+2. No está mostrando los gastos totales ni c/u
+3. Al presionar el botón volver del celular, se debe dirigir a HOME y no a la pantalla anterior
+4. El botón inferior de Participantes redirecciona incorrectamente cuando se viene de ver participantes de un evento específico
 
-| ID    | Descripción | Prioridad | Estado | Estimación | Asignado a | Notas |
-|-------|------------|-----------|--------|------------|------------|-------|
-| CU-01 | Al presionar el botón volver del celular, se debe dirigir a HOME y no a la pantalla anterior | 🔴 | 📝 | 2h | | Modificar NavigationContainerRef |
-| CU-02 | El botón inferior de Participantes redirecciona incorrectamente cuando se viene de ver participantes de un evento específico | 🔴 | 📝 | 3h | | Verificar parámetros de navegación |
-| CU-03 | Restablecer estilos perdidos durante la separación de estilo y funcionalidad | 🔴 | 📝 | 4h | | Revisar cada componente afectado |
+## Participante
 
-## 🛠️ Mejoras de Experiencia de Usuario 
+1. No aparece el botón eliminar en los participantes. Hacer las comprobaciones correspondientes, para determinar si un participante puede ser eliminado. Si dicho participante no se encuentra en ninguna tabla vinculada se podría eliminar y allí se le habilitaría el botón de eliminar, caso contrario el mismo continuaría gris y si se presiona saldría el mensaje "El participante {nombre} tiene tablas vinculadas."
+2. Sigue sin funcionar correctamente el boton de la barra inferior de la home, ya que toma el id del evento si ya anteriormente se ingreso a los participante desde los eventos.
 
-| ID    | Descripción | Prioridad | Estado | Estimación | Asignado a | Notas |
-|-------|------------|-----------|--------|------------|------------|-------|
-| UX-01 | Nuevo evento tenga el formato de + de gastos y participantes | 🟡 | 📝 | 4h | | Unificar experiencia de creación |
-| UX-02 | Definir campos obligatorios en formularios (Eventos/Gastos/Participantes) | 🟡 | 📝 | 3h | | Añadir validaciones y marcas visuales |
-| UX-03 | Mejorar división de gastos por participantes específicos | 🟡 | 📝 | 6h | | Implementar selector múltiple de participantes |
+## Profile
+1. Implementar tema oscuro/claro con selector
+2. Soporte multiidioma (Spa/Eng/Por/Fra/Ita)
+3. Funcionalidad de cambio de contraseña
+4. Edición de perfil (nombre, imagen, etc.)
+5. Al lado de la foto en el profile, deberia aparecer el nombre de usuario
 
-## 📊 Nuevas Funcionalidades
+## Resumen
 
-| ID    | Descripción | Prioridad | Estado | Estimación | Asignado a | Notas |
-|-------|------------|-----------|--------|------------|------------|-------|
-| NF-01 | Exportación de informes de gastos (PDF, CSV) | 🟢 | 📝 | 8h | | Investigar react-native-pdf y opciones de exportación |
-| NF-02 | Sistema de pagos entre participantes | 🟢 | 📝 | 12h | | Crear modelo de saldos y flujo de pagos |
+1. El modal de cuando se va a salir de un estado pagado, ver de agregar el cerrar y reducir el boton, como estan en los modales de edicion o carga de gastos
+2. La letra del botón, marcar como pagado, debe ser en negro.
+3. Los colores de las palabras y letras, no deben cambiar cuando el estado es Pagado.
+4. Consultarle como se podria realizar el calculo en caso que no todos asuman un mismo gasto en el evento
+5. Falta boton de cerrar en el modal al cambiar el estadoPago.
+6. Mejorar división de gastos por participantes específicos
+7. Exportación de informes de gastos (PDF, CSV)
+8. Sistema de pagos entre participantes
 
-## ⚙️ Configuración y Perfil
+## Optimización
 
-| ID    | Descripción | Prioridad | Estado | Estimación | Asignado a | Notas |
-|-------|------------|-----------|--------|------------|------------|-------|
-| CFG-01 | Implementar tema oscuro/claro con selector | 🟡 | 📝 | 6h | | Usar Context API para el tema |
-| CFG-02 | Soporte multiidioma (Spa/Eng/Por/Fra/Ita) | 🟢 | 📝 | 8h | | Implementar i18n con archivos de traducción |
-| CFG-03 | Funcionalidad de cambio de contraseña | 🟡 | 📝 | 3h | | Añadir validación de contraseña actual |
-| CFG-04 | Edición de perfil (nombre, imagen, etc.) | 🟡 | 📝 | 5h | | Incluir selector/captura de imagen |
+1. Optimizar rendimiento de listas largas
+2. Reducir tiempo de carga inicial
 
-## 📱 Optimización y Rendimiento
+## General
 
-| ID    | Descripción | Prioridad | Estado | Estimación | Asignado a | Notas |
-|-------|------------|-----------|--------|------------|------------|-------|
-| OPT-01 | Optimizar rendimiento de listas largas | 🟢 | 📝 | 4h | | Implementar windowing con FlashList |
-| OPT-02 | Reducir tiempo de carga inicial | 🟢 | 📝 | 3h | | Mejorar estrategia de carga de datos |
+1. Al pasar el mouse por arriba de los iconos, los mismos deberian mostrar el nombre de la funcionalidad
 
-## 📝 Instrucciones para actualizar este documento
+## README.md
 
-1. Al iniciar una tarea, cambiar el estado de "📝" a "⏳" y asignar a la persona responsable
-2. Al completar, cambiar el estado a "✅" y añadir la fecha de finalización en notas
-3. Para añadir nuevas tareas, seguir el formato de ID establecido (tipo-número)
-4. Mantener actualizada la prioridad según las necesidades del proyecto
+1. Confeccionar el documento completo referido a las funcionalidades, beneficios, ventajas. Realizar también una pequeña reseña de la definición de dicho proyecto.
+2. Agrega funcionalidades explicitas
+
+
+
+
 
 

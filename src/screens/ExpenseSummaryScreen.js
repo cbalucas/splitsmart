@@ -183,6 +183,34 @@ export default function ExpenseSummaryScreen() {
     };
   }, [eventId, gastos, participants, relations, getMonto]);
 
+  // Ordenar pagos: primero los no pagados, luego por deudor, monto y cobrador
+  const pagosProcesados = useMemo(() => {
+    return [...pagos].sort((a, b) => {
+      // Primero ordenar por estado de pago (no pagados primero)
+      const isPagadoA = pagosEstado[`${a.de}_${a.para}_${a.monto}`] || false;
+      const isPagadoB = pagosEstado[`${b.de}_${b.para}_${b.monto}`] || false;
+      
+      if (isPagadoA !== isPagadoB) {
+        return isPagadoA ? 1 : -1; // Pagados al final
+      }
+      
+      // Luego por nombre del deudor
+      if (a.deNombre !== b.deNombre) {
+        return a.deNombre.localeCompare(b.deNombre);
+      }
+      
+      // Luego por monto
+      const montoA = parseFloat(a.monto);
+      const montoB = parseFloat(b.monto);
+      if (montoA !== montoB) {
+        return montoB - montoA; // De mayor a menor
+      }
+      
+      // Finalmente por nombre del cobrador
+      return a.paraNombre.localeCompare(b.paraNombre);
+    });
+  }, [pagos, pagosEstado]);
+
   // Generar el contenido para compartir con formato mejorado para WhatsApp
   useEffect(() => {
     if (!event) return;
@@ -191,17 +219,21 @@ export default function ExpenseSummaryScreen() {
     const emoji = {
       calendar: '📅',
       money: '💰',
+      bill: '💵', // nuevo icono de billete
       person: '👤',
       payment: '💸',
       check: '✅',
+      app: '📱',
     };
     
-    let contenidoCompartir = `*RESUMEN DE GASTOS Y PAGOS* - _${event?.name || 'Evento'}_\n\n`;
+    // 1. Nombre del evento debajo del título
+    let contenidoCompartir = `*RESUMEN DE GASTOS Y PAGOS*\n_${event?.name || 'Evento'}_\n\n`;
     
     // Agregar fecha e información general
     contenidoCompartir += `${emoji.calendar} *Fecha:* ${event?.date || ''}\n`;
     contenidoCompartir += `${emoji.money} *Total del evento:* $${formatCurrency(totalGastos)}\n`;
-    contenidoCompartir += `${emoji.person} *Gastos c/u:* $${formatCurrency(promedioPorParticipante)}\n\n`;
+    // 2. Cambiar el icono de Gastos c/u por un icono de billete
+    contenidoCompartir += `${emoji.bill} *Gastos c/u:* $${formatCurrency(promedioPorParticipante)}\n\n`;
     
     // Agregar gastos individuales
     contenidoCompartir += "*GASTOS POR PERSONA:*\n";
@@ -214,17 +246,20 @@ export default function ExpenseSummaryScreen() {
     
     contenidoCompartir += "\n*PAGOS A REALIZAR:*\n";
     if (pagos.length === 0) {
-      contenidoCompartir += "${emoji.check} No hay pagos pendientes\n";
+      contenidoCompartir += `${emoji.check} No hay pagos pendientes\n`;
     } else {
+      // 3. Cambiar el formato de los pagos
       pagos.forEach(pago => {
         const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
-        const statusEmoji = isPagado ? `${emoji.check} ` : `${emoji.payment} `;
-        contenidoCompartir += `${statusEmoji}_${pago.deNombre}_ debe pagar *$${formatCurrency(parseFloat(pago.monto))}* a _${pago.paraNombre}_`;
+        const statusEmoji = isPagado ? emoji.check : emoji.payment;
+        
+        // Formato: icono {deudor} --> *{Monto}* --> {Cobrador}
+        contenidoCompartir += `${statusEmoji} _${pago.deNombre}_ --> *$${formatCurrency(parseFloat(pago.monto))}* --> _${pago.paraNombre}_`;
         
         // Si hay un alias, agregarlo
         const receptor = getParticipantById(pago.para);
         if (receptor?.aliasCBU) {
-          contenidoCompartir += ` (Alias: \`${receptor.aliasCBU}\`)`;
+          contenidoCompartir += `\nAlias: \`${receptor.aliasCBU}\``;
         }
         
         // Si está pagado, indicarlo
@@ -232,9 +267,13 @@ export default function ExpenseSummaryScreen() {
           contenidoCompartir += " - *PAGADO*";
         }
         
-        contenidoCompartir += "\n";
+        contenidoCompartir += "\n\n";
       });
     }
+    
+    // 4. Agregar la leyenda de SplitSmart al final
+    contenidoCompartir += "\n----------------------------\n";
+    contenidoCompartir += `${emoji.app} Este Resumen fue realizado por *SplitSmart* tu app de División de Gastos y Pago en Eventos.`;
     
     setShareContent(contenidoCompartir);
   }, [event, participants, totalGastos, gastosPorParticipante, pagos, promedioPorParticipante, pagosEstado, getParticipantById]);
@@ -374,14 +413,20 @@ export default function ExpenseSummaryScreen() {
               {participants.length === 0 ? (
                 <Text style={styles.noData}>No hay participantes registrados</Text>
               ) : (
-                participants.map(participante => (
-                  <View key={participante.id} style={styles.participanteItem}>
-                    <Text style={styles.participanteNombre}>
-                      <Ionicons name="person-outline" size={16} color={colors.textSecondary} style={{marginRight: 6}} />
-                      {participante.name}
-                    </Text>
-                  </View>
-                ))
+                <View style={styles.participantesGrid}>
+                  {participants.map(participante => (
+                    <View key={participante.id} style={styles.participanteGridItem}>
+                      <Ionicons 
+                        name="person-outline" 
+                        size={16} 
+                        color={colors.textSecondary} 
+                      />
+                      <Text style={styles.participanteNombre}>
+                        {participante.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               )}
             </>
           )}
@@ -390,8 +435,8 @@ export default function ExpenseSummaryScreen() {
         {/* Pagos a realizar */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>PAGOS A REALIZAR</Text>
-          {pagos.length > 0 ? (
-            pagos.map((pago, index) => {
+          {pagosProcesados.length > 0 ? (
+            pagosProcesados.map((pago, index) => {
               const pagador = getParticipantById(pago.de);
               const receptor = getParticipantById(pago.para);
               const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
@@ -399,7 +444,7 @@ export default function ExpenseSummaryScreen() {
               return (
                 <TouchableOpacity
                   key={index} 
-                  style={[styles.pagoItem, isPagado && styles.pagoPagado]}
+                  style={styles.pagoItem}
                   onPress={() => {
                     setSelectedPago({
                       id: `${pago.de}_${pago.para}_${pago.monto}`,
@@ -635,13 +680,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
+  participantesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  participanteGridItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '48%',
+    marginBottom: 8,
+    paddingVertical: 6,
+  },
+  participanteNombre: {
+    fontSize: 15,
+    color: colors.textPrimary,
+    marginLeft: 10, // Padding entre el icono y el nombre
+  },
   pagoItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  pagoPagado: {
-    backgroundColor: colors.backgroundInactive,
   },
   pagoFlexContainer: {
     flexDirection: 'row',
@@ -757,11 +816,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
   },
   buttonClose: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.textInactive, // Cambiado a gris como el modal de cargas de gastos
   },
   buttonText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: colors.textPrimary,
+    color: '#000000', // Color negro para el texto del botón
   },
 });
