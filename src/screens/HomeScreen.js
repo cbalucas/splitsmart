@@ -224,11 +224,15 @@ export default function HomeScreen() {
     setWhatsappEnvio(item.whatsappEnvio);
     
     // Calcular totales actualizados de gastos
-    const { total: updatedTotal, per: updatedPer } = updateEventTotals(item.id);
+    const totalGastos = calculateTotalGastos(item.id);
+    const totalPersonas = getTotalPersonCount(item.id);
+    
+    // Calcular el costo por persona usando el total de personas (no solo participantes)
+    const costoPorPersona = totalPersonas > 0 ? totalGastos / totalPersonas : 0;
     
     // Establecer valores de gastos calculados
-    setTotal(updatedTotal.toString());
-    setPer(updatedPer.toFixed(2));
+    setTotal(totalGastos.toString());
+    setPer(costoPorPersona.toFixed(2));
     setEstadoEvento(item.estadoEvento);
     setParticipantsCollapsed(true);
     setExpensesCollapsed(true);
@@ -286,7 +290,10 @@ export default function HomeScreen() {
     const gastos = getGastosForEvent(item.id);
     const tieneGastos = gastos.length > 0;
     const totalFmt = (item.total ?? 0).toLocaleString();
-    const perFmt = (item.per ?? 0).toLocaleString(undefined, {
+    
+    // Asegurar que el per se calcula usando el total de personas
+    const calculatedPer = totalPersonas > 0 ? (item.total || 0) / totalPersonas : 0;
+    const perFmt = calculatedPer.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -310,9 +317,9 @@ export default function HomeScreen() {
               <Text style={homeStyles.amountSub}>c/u ${perFmt}</Text>
               <View style={homeStyles.participantsRow}>
                 <Ionicons name="people-outline" size={16} color={participantesClr} />
-                <Text style={homeStyles.eventParticipantsCount}>{cnt}</Text>
+                {/* Mostrar total de personas en lugar de participantes registrados */}
+                <Text style={homeStyles.eventParticipantsCount}>{totalPersonas}</Text>
               </View>
-              <Text style={homeStyles.totalPersonsText}>Total personas: {totalPersonas}</Text>
             </View>
           </View>
         </TouchableOpacity>
