@@ -258,14 +258,16 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={homeStyles.actionButton}
             onPress={() => navigation.navigate('CreateExpense', { eventId: item.id })}
+            disabled={!item.estadoEvento}
           >
-            <Ionicons name="cash-outline" size={20} color={gastosClr} />
+            <Ionicons name="cash-outline" size={20} color={item.estadoEvento ? gastosClr : colors.textDisabled} />
           </TouchableOpacity>
           <TouchableOpacity
             style={homeStyles.actionButton}
             onPress={() => navigation.navigate('Participants', { eventId: item.id })}
+            disabled={!item.estadoEvento}
           >
-            <Ionicons name="people-outline" size={20} color={participantesClr} />
+            <Ionicons name="people-outline" size={20} color={item.estadoEvento ? participantesClr : colors.textDisabled} />
           </TouchableOpacity>
           <TouchableOpacity
             style={homeStyles.actionButton}
