@@ -24,6 +24,9 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [accepted, setAccepted] = useState(false);
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [isUsernameValid, setIsUsernameValid] = useState(true);
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [isPasswordValid, setIsPasswordValid] = useState(true);
@@ -249,30 +252,54 @@ export default function SignUpScreen() {
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Contraseña <Text style={styles.requiredField}>*</Text></Text>
-          <TextInput
-            placeholder="Crea una contraseña segura"
-            placeholderTextColor="#AAA"
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            secureTextEntry
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="Crea una contraseña segura"
+              placeholderTextColor="#AAA"
+              value={password}
+              onChangeText={setPassword}
+              style={styles.passwordInput}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeButton}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons 
+                name={showPassword ? 'eye-off' : 'eye'} 
+                size={22} 
+                color="#AAA" 
+              />
+            </TouchableOpacity>
+          </View>
           {renderPasswordStrengthIndicator()}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Confirmar Contraseña <Text style={styles.requiredField}>*</Text></Text>
-          <TextInput
-            placeholder="Confirma tu contraseña"
-            placeholderTextColor="#AAA"
-            value={confirmPassword}
-            onChangeText={(text) => {
-              setConfirmPassword(text);
-              validatePasswordMatch(text);
-            }}
-            style={[styles.input, !isPasswordMatching && confirmPassword && styles.inputError]}
-            secureTextEntry
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="Confirma tu contraseña"
+              placeholderTextColor="#AAA"
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                validatePasswordMatch(text);
+              }}
+              style={styles.passwordInput}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity 
+              style={styles.eyeButton}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Ionicons 
+                name={showConfirmPassword ? 'eye-off' : 'eye'} 
+                size={22} 
+                color="#AAA" 
+              />
+            </TouchableOpacity>
+          </View>
           {!isPasswordMatching && confirmPassword && (
             <Text style={styles.errorText}>Las contraseñas no coinciden</Text>
           )}
@@ -426,5 +453,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     textDecorationLine: 'underline',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1F2230',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1F2230',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    color: '#FFF',
+    fontSize: 16,
+  },
+  eyeButton: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
