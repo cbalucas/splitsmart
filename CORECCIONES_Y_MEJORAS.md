@@ -9,6 +9,8 @@
         Lukitas (2)
 #. Agregar la cantidad de personas que representa el participante en la seccion de Pagos del whatapp agregandolo entre parentesis a continuacion del nombre.
 
+#. Actualizar el DrawIo de las tablas , ya que se debio levantar una version vieja.
+
 Estas cosas las comento Droopy ver y ampliar para completar como mejoras
 #1. Detalle del Evento
 #2. Colores Explicacion 

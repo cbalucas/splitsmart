@@ -1,19 +1,66 @@
 // src/components/AvatarMenu.js
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, TouchableOpacity, Modal, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons, FontAwesome, Ionicons } from '@expo/vector-icons';
 import colors from '../styles/colors';
 import { AuthContext } from '../context/AuthContext';
+import { sampleUsers } from '../data/sampleData';
 
 const AvatarMenu = ({ logout: propLogout }) => {
     const [menuVisible, setMenuVisible] = useState(false);
     const [expandedSection, setExpandedSection] = useState(null);
+    const [userData, setUserData] = useState(null);
     const navigation = useNavigation();
     const { logout: contextLogout, user } = useContext(AuthContext);
     
     // Usar la función de logout que viene por prop, o si no, usar la del contexto
     const logout = propLogout || contextLogout;
+
+    // Obtener los datos completos del usuario actual
+    useEffect(() => {
+        if (user) {
+            if (user.isGuest) {
+                // Si es un usuario invitado, usar los datos que vienen en el objeto user
+                setUserData(user);
+            } else {
+                // Verificar si ya tenemos todos los datos necesarios en el objeto user
+                if (user.userName && user.email !== undefined && user.celular !== undefined) {
+                    setUserData(user);
+                } else {
+                    // Buscar el usuario por id, email o nombre de usuario
+                    const currentUser = sampleUsers.find(u => 
+                        u.id === user.id || 
+                        u.email === user.email || 
+                        u.usuario === user.userName
+                    );
+                    
+                    if (currentUser) {
+                        setUserData({
+                            ...user,
+                            nombre: currentUser.nombre || user.nombre,
+                            userName: currentUser.usuario || user.userName,
+                            email: currentUser.email || user.email,
+                            celular: currentUser.celular || user.celular,
+                            imagenProfile: currentUser.imagenProfile || user.imagenProfile
+                        });
+                    } else {
+                        // Si no se encuentra, usar los datos que tenemos
+                        setUserData(user);
+                    }
+                }
+            }
+        } else {
+            // Datos predeterminados si no hay usuario autenticado
+            setUserData({
+                nombre: 'Usuario',
+                userName: '',
+                email: '',
+                celular: '',
+                imagenProfile: null
+            });
+        }
+    }, [user]);
 
     const toggleMenu = () => {
         setMenuVisible(!menuVisible);
@@ -52,11 +99,14 @@ const AvatarMenu = ({ logout: propLogout }) => {
         // según la opción seleccionada
     };
 
+    // Usar la imagen de perfil del usuario o la imagen predeterminada
+    const profileImage = userData?.imagenProfile || require('../assets/avatar.png');
+
     return (
         <View>
             <TouchableOpacity onPress={toggleMenu}>
                 <Image 
-                    source={require('../assets/avatar.png')} 
+                    source={profileImage} 
                     style={styles.avatar} 
                 />
             </TouchableOpacity>
@@ -79,10 +129,10 @@ const AvatarMenu = ({ logout: propLogout }) => {
                         {/* Header con avatar y nombre de usuario */}
                         <View style={styles.menuHeader}>
                             <Image 
-                                source={require('../assets/avatar.png')} 
+                                source={profileImage} 
                                 style={styles.menuAvatar} 
                             />
-                            <Text style={styles.userName}>{user?.displayName || 'Usuario'}</Text>
+                            <Text style={styles.userName}>{userData?.nombre || 'Usuario'}</Text>
                         </View>
 
                         {/* Menu Items */}
@@ -108,20 +158,27 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                 {/* Submenú de Perfil */}
                                 {expandedSection === 'profile' && (
                                     <View style={styles.submenu}>
-                                        {[
-                                            { icon: "person", label: "Usuario" },
-                                            { icon: "mail", label: "Email" },
-                                            { icon: "call", label: "Celular" }
-                                        ].map((item, index) => (
-                                            <TouchableOpacity 
-                                                key={index} 
-                                                style={styles.submenuItem}
-                                                onPress={() => handleSubMenuAction('Profile', item.label)}
-                                            >
-                                                <Ionicons name={item.icon} size={16} color={colors.secondary} />
-                                                <Text style={styles.submenuText}>{item.label}</Text>
-                                            </TouchableOpacity>
-                                        ))}
+                                        <View style={styles.submenuItem}>
+                                            <Ionicons name="person" size={16} color={colors.secondary} />
+                                            <Text style={styles.submenuLabel}>Usuario:</Text>
+                                            <Text style={styles.submenuValue}>
+                                                {userData?.isGuest ? 'INVITADO' : (userData?.userName || 'No disponible')}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.submenuItem}>
+                                            <Ionicons name="mail" size={16} color={colors.secondary} />
+                                            <Text style={styles.submenuLabel}>Email:</Text>
+                                            <Text style={styles.submenuValue}>
+                                                {userData?.isGuest ? '' : (userData?.email || 'No disponible')}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.submenuItem}>
+                                            <Ionicons name="call" size={16} color={colors.secondary} />
+                                            <Text style={styles.submenuLabel}>Celular:</Text>
+                                            <Text style={styles.submenuValue}>
+                                                {userData?.isGuest ? '' : (userData?.celular || 'No disponible')}
+                                            </Text>
+                                        </View>
                                     </View>
                                 )}
                             </View>
@@ -261,6 +318,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.textSecondary,
         marginLeft: 8,
+    },
+    submenuLabel: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.textSecondary,
+        marginLeft: 8,
+        marginRight: 4,
+    },
+    submenuValue: {
+        fontSize: 14,
+        color: colors.textPrimary,
+        flexShrink: 1,
     },
 });
 

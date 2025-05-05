@@ -12,22 +12,49 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native'; 
+import { sampleUsers } from '../data/sampleData';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const { login } = useContext(AuthContext);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Puede ser email o nombre de usuario
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    if (email === 'demo@splitsmart.com' && password === 'Demo123') {
-      login({ id: 'demo', name: 'Demo User' });
+    // Buscar el usuario por email o nombre de usuario
+    const user = sampleUsers.find(
+      u => (u.email === identifier || u.usuario === identifier) && u.contraseña === password
+    );
+
+    if (user) {
+      // Pasar toda la información del usuario al contexto de autenticación
+      login({
+        id: user.id,
+        nombre: user.nombre,
+        userName: user.usuario,
+        email: user.email,
+        celular: user.celular,
+        imagenProfile: user.imagenProfile
+      });
     } else {
       Alert.alert(
         'Credenciales inválidas',
-        'Usa demo@splitsmart.com / Demo123'
+        'El usuario o la contraseña no son correctos'
       );
     }
+  };
+
+  const handleGuestLogin = () => {
+    // Crear un usuario invitado con valores predeterminados
+    login({
+      id: 'guest',
+      nombre: 'Invitado',
+      userName: 'INVITADO',
+      email: '',
+      celular: '',
+      imagenProfile: null,
+      isGuest: true
+    });
   };
 
   return (
@@ -38,17 +65,16 @@ export default function LoginScreen() {
       />
 
       <TextInput
-        placeholder="Email"
+        placeholder="Email o Usuario"
         placeholderTextColor="#AAA"
-        value={email}
-        onChangeText={setEmail}
+        value={identifier}
+        onChangeText={setIdentifier}
         style={styles.input}
-        keyboardType="email-address"
         autoCapitalize="none"
       />
 
       <TextInput
-        placeholder="Password"
+        placeholder="Contraseña"
         placeholderTextColor="#AAA"
         value={password}
         onChangeText={setPassword}
@@ -57,26 +83,26 @@ export default function LoginScreen() {
       />
 
       <TouchableOpacity
-        style={[styles.primaryButton, (!email || !password) && styles.primaryButtonDisabled]}
+        style={[styles.primaryButton, (!identifier || !password) && styles.primaryButtonDisabled]}
         onPress={handleLogin}
-        disabled={!email || !password}
+        disabled={!identifier || !password}
       >
-        <Text style={styles.primaryButtonText}>Sign In</Text>
+        <Text style={styles.primaryButtonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.socialButton} onPress={() => Alert.alert('Google Login')}>
         <Ionicons name="logo-google" size={20} />
-        <Text style={styles.socialButtonText}>Continue with Google</Text>
+        <Text style={styles.socialButtonText}>Continuar con Google</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => login({ id: 'guest', name: 'Invitado' })}>
+      <TouchableOpacity onPress={handleGuestLogin}>
         <Text style={styles.linkText}>Invitado</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
-        <Text style={[styles.footerLink, { color: '#888' }]}>Forgot Password?</Text>
+        <Text style={[styles.footerLink, { color: '#888' }]}>¿Olvidaste tu contraseña?</Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={styles.footerLink}>Sign Up</Text>
+          <Text style={styles.footerLink}>Registrarse</Text>
         </TouchableOpacity>
       </View>
     </View>

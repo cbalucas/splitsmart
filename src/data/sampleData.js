@@ -69,8 +69,50 @@ export const sampleEvents = [
   
   ];
 
-
-  export const sampleProfile = [
-    { id: '1', usuario: 'Lucas',  password: '4',monto:'50000' },
-    // … más participantes …
+  export const sampleUsers = [
+    { 
+      id: '1', 
+      nombre: 'Lucas Paez Allende', 
+      usuario: 'lucas.paez.allende', 
+      email: 'demo@splitsmart.com', 
+      contraseña: 'Demo123', 
+      celular: '3516175809', 
+      imagenProfile: require('../assets/avatar.png')
+    },
+    { 
+      id: '2', 
+      nombre: 'Ana Perez', 
+      usuario: 'ana.perez', 
+      email: 'ana@example.com', 
+      contraseña: 'ana1234', 
+      celular: '3512356789', 
+      imagenProfile: null
+    },
+    { 
+      id: '3', 
+      nombre: 'Martin Gomez', 
+      usuario: 'martin.gomez', 
+      email: 'martin@example.com', 
+      contraseña: 'martin2023', 
+      celular: '3516789012', 
+      imagenProfile: null
+    },
+    { 
+      id: '4', 
+      nombre: 'Carolina Sanchez', 
+      usuario: 'caro.sanchez', 
+      email: 'caro@example.com', 
+      contraseña: 'caro4567', 
+      celular: '3513456789', 
+      imagenProfile: null
+    },
+    { 
+      id: '5', 
+      nombre: 'Santiago Lopez', 
+      usuario: 'santi.lopez', 
+      email: 'santi@example.com', 
+      contraseña: 'santi9876', 
+      celular: '3514567890', 
+      imagenProfile: null
+    }
   ];
