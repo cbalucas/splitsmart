@@ -6,8 +6,8 @@
 
 ## Home
 
-1. Se deben desabilitar los iconos de gastos y participantes cuando un evento se encuentra con estadoEvento = false
-2. No está mostrando los gastos totales ni c/u
+<!-- 1. Se deben desabilitar los iconos de gastos y participantes cuando un evento se encuentra con estadoEvento = false -->
+2. No está mostrando los gastos totales ni gastos c/u
 3. Al presionar el botón volver del celular, se debe dirigir a HOME y no a la pantalla anterior
 4. El botón inferior de Participantes redirecciona incorrectamente cuando se viene de ver participantes de un evento específico
 

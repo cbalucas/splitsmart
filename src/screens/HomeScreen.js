@@ -36,10 +36,52 @@ export default function HomeScreen() {
     addEvent,
     getParticipantsForEvent,
     getGastosForEvent,
+    updateEventTotals,
+    calculateTotalGastos,
   } = useContext(EventContext);
 
+  // Actualizar totales de eventos al cargar la pantalla de forma segura
+  const [initialUpdateDone, setInitialUpdateDone] = useState(false);
+  
+  useEffect(() => {
+    // Solo ejecutar una vez al inicio para evitar bucles infinitos
+    if (!initialUpdateDone) {
+      // Calculamos los totales solo para usarlos en el componente, sin actualizar el estado global
+      events.forEach(event => {
+        // No llamamos a updateEventTotals porque actualiza el estado y causa el bucle
+        const totalGastos = calculateTotalGastos(event.id);
+        const participantesCount = getParticipantsForEvent(event.id).length || 1;
+        const costoPorPersona = participantesCount > 0 ? totalGastos / participantesCount : 0;
+        
+        // Solo actualizamos si los valores son diferentes para evitar renders innecesarios
+        if (event.total !== totalGastos || event.per !== costoPorPersona) {
+          updateEvent(event.id, {
+            total: totalGastos,
+            per: parseFloat(costoPorPersona.toFixed(2)),
+          });
+        }
+      });
+      setInitialUpdateDone(true);
+    }
+  }, []);
+
   // Reabrir modal si vienen de gastos
-  const { openEventId } = route.params || {};
+  const { openEventId, updatedEventId, updateTimestamp } = route.params || {};
+  
+  // Detectar actualizaciones de eventos desde ParticipantsScreen
+  useEffect(() => {
+    if (updatedEventId && updateTimestamp) {
+      // Actualizar el evento cuando regresamos de la pantalla de participantes
+      updateEventTotals(updatedEventId);
+      
+      // Actualizar la UI para mostrar los cambios
+      setSearch(prev => {
+        setTimeout(() => setSearch(prev), 50);
+        return prev;
+      });
+    }
+  }, [updatedEventId, updateTimestamp]);
+  
   useEffect(() => {
     if (openEventId) {
       const evt = events.find(e => e.id === openEventId);
@@ -149,6 +191,10 @@ export default function HomeScreen() {
       return Alert.alert('Error', 'Por favor, completa el título y la fecha del evento.');
     }
 
+    // Inicializar valores para total y per
+    const initialTotal = 0;
+    const initialPer = 0;
+
     addEvent({
       name: newEventName,
       date: newEventDate,
@@ -156,6 +202,8 @@ export default function HomeScreen() {
       map: newEventMapUrl,
       whatsappEnvio: newEventWhatsapp,
       estadoEvento: true,
+      total: initialTotal,
+      per: initialPer,
     });
 
     setNewEventModalVisible(false);
@@ -173,13 +221,19 @@ export default function HomeScreen() {
     setAddress(item.address || '');
     setMapUrl(item.map || '');
     setWhatsappEnvio(item.whatsappEnvio);
-    setTotal((item.total ?? '').toString());
-    setPer((item.per ?? 0).toFixed(2));
+    
+    // Calcular totales actualizados de gastos
+    const { total: updatedTotal, per: updatedPer } = updateEventTotals(item.id);
+    
+    // Establecer valores de gastos calculados
+    setTotal(updatedTotal.toString());
+    setPer(updatedPer.toFixed(2));
     setEstadoEvento(item.estadoEvento);
     setParticipantsCollapsed(true);
     setExpensesCollapsed(true);
     setModalVisible(true);
   };
+
   const openEditModal = item => {
     openViewModal(item);
     setModalMode('edit');

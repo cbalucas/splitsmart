@@ -27,7 +27,8 @@ export default function ParticipantsScreen() {
     updateParticipant,
     getParticipantsForEvent, 
     addParticipantToEvent, 
-    removeParticipantFromEvent 
+    removeParticipantFromEvent,
+    updateEventTotals
   } = useContext(EventContext);
   const navigation = useNavigation();
   const route = useRoute();
@@ -59,11 +60,15 @@ export default function ParticipantsScreen() {
 
   // Función para navegar al Home
   const goToHome = useCallback(() => {
+    // Si hay un eventId, pasamos este parámetro para forzar la actualización en Home
     navigation.navigate('Tabs', {
       screen: 'Home',
-      // No pasamos parámetros adicionales para evitar que se abra automáticamente algún modal
+      params: eventId ? { 
+        updatedEventId: eventId, 
+        updateTimestamp: Date.now() // Timestamp para forzar actualización
+      } : undefined
     });
-  }, [navigation]);
+  }, [navigation, eventId]);
 
   // Manejo del botón de retroceso hardware
   useEffect(() => {
@@ -190,6 +195,10 @@ export default function ParticipantsScreen() {
       try {
         const result = removeParticipantFromEvent(eventId, participantId);
         if (result) {
+          // Actualizar los totales después de quitar un participante
+          updateEventTotals(eventId);
+          
+          // Actualizar la interfaz
           setShowOnlyEventParticipants(prev => {
             setTimeout(() => setShowOnlyEventParticipants(prev), 50);
             return prev;
@@ -206,6 +215,10 @@ export default function ParticipantsScreen() {
       try {
         addParticipantToEvent(eventId, participantId);
         
+        // Actualizar los totales después de añadir un participante
+        updateEventTotals(eventId);
+        
+        // Actualizar la interfaz
         setShowOnlyEventParticipants(prev => {
           setTimeout(() => setShowOnlyEventParticipants(prev), 50);
           return prev;

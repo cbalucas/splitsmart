@@ -34,6 +34,7 @@ export default function CreateExpenseScreen() {
     addGasto,
     updateGasto,
     removeGasto,
+    updateEventTotals
   } = useContext(EventContext);
 
   // Evento, participantes y gastos asociados

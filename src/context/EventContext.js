@@ -76,9 +76,13 @@ export function EventProvider({ children }) {
     };
     setRelations((rel) => [...rel, newRel]);
     // incrementa el contador en el evento
+    const newParticipantCount = getParticipantsForEvent(eventId).length + 1;
     updateEvent(eventId, {
-      participants: getParticipantsForEvent(eventId).length + 1,
+      participants: newParticipantCount,
     });
+    
+    // Actualizar el costo por persona después de añadir participante
+    updateEventTotals(eventId);
   };
 
   // 5) Quita participante de evento
@@ -94,9 +98,13 @@ export function EventProvider({ children }) {
         )
       );
       // decrementa contador
+      const newParticipantCount = getParticipantsForEvent(eventId).length - 1;
       updateEvent(eventId, {
-        participants: getParticipantsForEvent(eventId).length - 1,
+        participants: newParticipantCount,
       });
+      
+      // Actualizar el costo por persona después de quitar participante
+      updateEventTotals(eventId);
       return true;
     } catch (error) {
       console.error("Error al quitar participante del evento:", error);
@@ -106,10 +114,40 @@ export function EventProvider({ children }) {
 
   // 6) Obtiene gastos de un evento
   const getGastosForEvent = (eventId) => {
-    const relIds = relations
-      .filter((r) => r.eventsId === eventId)
-      .map((r) => r.id);
-    return gastos.filter((g) => relIds.includes(g.eventsParticipantsId));
+    // Obtenemos solo las relaciones específicas de este evento
+    const eventRelaciones = relations.filter(r => r.eventsId === eventId);
+    
+    // Obtenemos solo los IDs de estas relaciones
+    const eventRelacionesIds = eventRelaciones.map(r => r.id);
+    
+    // Filtramos los gastos que están vinculados a las relaciones de este evento específico
+    return gastos.filter(g => eventRelacionesIds.includes(g.eventsParticipantsId));
+  };
+  
+  // 6.1) Calcula el total de gastos de un evento
+  const calculateTotalGastos = (eventId) => {
+    const gastosEvento = getGastosForEvent(eventId);
+    return gastosEvento.reduce((total, gasto) => {
+      // Convertir el monto de string a número, reemplazando comas por puntos si es necesario
+      const montoNum = typeof gasto.monto === 'string' 
+        ? parseFloat(gasto.monto.replace(',', '.')) 
+        : gasto.monto;
+      return total + (montoNum || 0);
+    }, 0);
+  };
+  
+  // 6.2) Actualiza los totales de gastos y costo por persona para un evento
+  const updateEventTotals = (eventId) => {
+    const totalGastos = calculateTotalGastos(eventId);
+    const participantesCount = getParticipantsForEvent(eventId).length || 1;
+    const costoPorPersona = participantesCount > 0 ? totalGastos / participantesCount : 0;
+    
+    updateEvent(eventId, {
+      total: totalGastos,
+      per: parseFloat(costoPorPersona.toFixed(2)),
+    });
+    
+    return { total: totalGastos, per: costoPorPersona };
   };
 
   // 7) Obtiene participante por ID
@@ -148,17 +186,50 @@ export function EventProvider({ children }) {
       ...gasto
     };
     setGastos(prev => [...prev, newGasto]);
+    
+    // Actualizar el total del evento cuando se añade un gasto
+    if (gasto.eventsParticipantsId) {
+      const rel = relations.find(r => r.id === gasto.eventsParticipantsId);
+      if (rel) {
+        updateEventTotals(rel.eventsId);
+      }
+    }
+    
     return newId;
   };
 
   // 11) Actualizar un gasto existente
   const updateGasto = (id, data) => {
+    // Guardar el gasto anterior para identificar el evento
+    const oldGasto = gastos.find(g => g.id === id);
+    
+    // Actualizar el gasto
     setGastos(prev => prev.map(g => g.id === id ? { ...g, ...data } : g));
+    
+    // Actualizar el total del evento
+    if (oldGasto && oldGasto.eventsParticipantsId) {
+      const rel = relations.find(r => r.id === oldGasto.eventsParticipantsId);
+      if (rel) {
+        updateEventTotals(rel.eventsId);
+      }
+    }
   };
 
   // 12) Eliminar un gasto
   const removeGasto = (id) => {
+    // Guardar el gasto que se eliminará para identificar el evento
+    const gastoToRemove = gastos.find(g => g.id === id);
+    
+    // Eliminar el gasto
     setGastos(prev => prev.filter(g => g.id !== id));
+    
+    // Actualizar el total del evento después de eliminar
+    if (gastoToRemove && gastoToRemove.eventsParticipantsId) {
+      const rel = relations.find(r => r.id === gastoToRemove.eventsParticipantsId);
+      if (rel) {
+        updateEventTotals(rel.eventsId);
+      }
+    }
   };
 
   // 13) Añadir un nuevo participante
@@ -196,9 +267,21 @@ export function EventProvider({ children }) {
 
   // 15) Eliminar un participante
   const removeParticipant = (id) => {
+    // Identificar los eventos a los que pertenece el participante
+    const eventosDelParticipante = relations
+      .filter(r => r.participantsId === id)
+      .map(r => r.eventsId);
+    
+    // Eliminar el participante
     setParticipants(prev => prev.filter(p => p.id !== id));
+    
     // También eliminar relaciones asociadas con este participante
     setRelations(prev => prev.filter(r => r.participantsId !== id));
+    
+    // Actualizar totales de los eventos afectados
+    eventosDelParticipante.forEach(eventId => {
+      updateEventTotals(eventId);
+    });
   };
 
   // Creamos el objeto con todos los valores y funciones que proporcionará el contexto
@@ -223,7 +306,10 @@ export function EventProvider({ children }) {
     // Funciones para participantes
     addParticipant,
     updateParticipant,
-    removeParticipant
+    removeParticipant,
+    // Funciones adicionales
+    calculateTotalGastos,
+    updateEventTotals
   };
 
   return (
