@@ -525,20 +525,20 @@ export default function ExpenseSummaryScreen() {
                     }}
                   >
                     <View style={styles.pagoFlexContainer}>
-                      <Text style={[styles.pagador, isPagado && styles.textoInactivo]}>
+                      <Text style={styles.pagador}>
                         {pagador?.name || pago.deNombre}
                       </Text>
                       <View style={styles.montoContainer}>
-                        <Text style={[styles.pagoMonto, isPagado && styles.textoInactivo]}>
+                        <Text style={styles.pagoMonto}>
                           ${formatCurrency(parseFloat(pago.monto))}
                         </Text>
                         {receptor?.aliasCBU && (
-                          <Text style={[styles.aliasCBU, isPagado && styles.textoInactivo]}>
+                          <Text style={styles.aliasCBU}>
                             Alias: {receptor.aliasCBU}
                           </Text>
                         )}
                       </View>
-                      <Text style={[styles.receptor, isPagado && styles.textoInactivo]}>
+                      <Text style={styles.receptor}>
                         {receptor?.name || pago.paraNombre}
                       </Text>
                     </View>
@@ -587,24 +587,24 @@ export default function ExpenseSummaryScreen() {
                   
                   <View style={styles.modalButtonsRow}>
                     <TouchableOpacity
-                      style={[styles.modalButton, selectedPago.estadoPago ? styles.buttonInactive : styles.buttonActive]}
+                      style={[commonStyles.button, selectedPago.estadoPago ? commonStyles.cancelBtn : commonStyles.saveBtn]}
                       onPress={() => {
                         updatePagoEstado(eventId, selectedPago.id, true);
                         setPagoModalVisible(false);
                       }}
                     >
-                      <Text style={styles.buttonText}>Marcar como Pagado</Text>
+                      <Text style={commonStyles.buttonText}>Marcar como Pagado</Text>
                     </TouchableOpacity>
                     
                     {selectedPago.estadoPago && (
                       <TouchableOpacity
-                        style={[styles.modalButton, styles.buttonCancel]}
+                        style={[commonStyles.button, commonStyles.cancelBtn]}
                         onPress={() => {
                           updatePagoEstado(eventId, selectedPago.id, false);
                           setPagoModalVisible(false);
                         }}
                       >
-                        <Text style={styles.buttonText}>Desmarcar Pago</Text>
+                        <Text style={commonStyles.buttonText}>Desmarcar Pago</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -612,10 +612,10 @@ export default function ExpenseSummaryScreen() {
               )}
               
               <TouchableOpacity
-                style={[styles.modalButton, styles.buttonClose]}
+                style={[commonStyles.button, commonStyles.cancelBtn]}
                 onPress={() => setPagoModalVisible(false)}
               >
-                <Text style={styles.buttonText}>Cerrar</Text>
+                <Text style={commonStyles.buttonText}>Cerrar</Text>
               </TouchableOpacity>
             </View>
           </View>
