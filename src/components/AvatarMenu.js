@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.card,
         borderRadius: 10,
         padding: 10,
-        width: 220,
+        width: 280, // Aumentado de 220 a 280 para dar más espacio al contenido
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
@@ -286,6 +286,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: colors.textPrimary,
+        flexShrink: 1, // Permite que el texto se encoja si es demasiado largo
     },
     menuItemsContainer: {
         marginTop: 10,
@@ -313,6 +314,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 8,
+        flexWrap: 'wrap', // Permite que los elementos se envuelvan si no caben
     },
     submenuText: {
         fontSize: 14,
@@ -330,6 +332,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: colors.textPrimary,
         flexShrink: 1,
+        flex: 1, // Toma el espacio disponible restante
     },
 });
 
