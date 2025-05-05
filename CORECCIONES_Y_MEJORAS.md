@@ -2,12 +2,8 @@
 
 ## ORDENAR Y ACOMODAR
 <!-- Aca se colocan todas las observaciones que hasta el momento no se han clasificado ni categorizado. -->
-#. Se deben cambiar el x y la cantidad de participantes por ({cantParticipantes}) en las visualizaciones de eventos, resumen
-    hoy 
-        Lukitas x 2
-    Corregido
-        Lukitas (2)
-#. Agregar la cantidad de personas que representa el participante en la seccion de Pagos del whatapp agregandolo entre parentesis a continuacion del nombre.
+
+<!-- #. Agregar la cantidad de personas que representa el participante en la seccion de Pagos del whatapp agregandolo entre parentesis a continuacion del nombre. -->
 
 <!-- #. Actualizar el DrawIo de las tablas , ya que se debio levantar una version vieja. -->
 
@@ -40,11 +36,11 @@ Estas cosas las comento Droopy ver y ampliar para completar como mejoras
 
 ## Resumen
 
-1. El modal de cuando se va a salir de un estado pagado, ver de agregar el cerrar y reducir el boton, como estan en los modales de edicion o carga de gastos
-2. La letra del botón, marcar como pagado, debe ser en negro.
+<!-- 1. El modal de cuando se va a salir de un estado pagado, ver de agregar el cerrar y reducir el boton, como estan en los modales de edicion o carga de gastos -->
+<!-- 2. La letra del botón, marcar como pagado, debe ser en negro. -->
 <!-- 3. Los colores de las palabras y letras, no deben cambiar cuando el estado es Pagado. -->
 4. Consultarle como se podria realizar el calculo en caso que no todos asuman un mismo gasto en el evento
-5. Falta boton de cerrar en el modal al cambiar el estadoPago.
+<!-- 5. Falta boton de cerrar en el modal al cambiar el estadoPago. -->
 6. Mejorar división de gastos por participantes específicos
 7. Exportación de informes de gastos (PDF, CSV)
 8. Sistema de pagos entre participantes

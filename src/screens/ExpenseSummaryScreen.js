@@ -302,11 +302,19 @@ export default function ExpenseSummaryScreen() {
         const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
         const statusEmoji = isPagado ? emoji.check : emoji.payment;
         
-        // Formato: icono {deudor} --> *{Monto}* --> {Cobrador}
-        contenidoCompartir += `${statusEmoji} _${pago.deNombre}_ --> *$${formatCurrency(parseFloat(pago.monto))}* --> _${pago.paraNombre}_`;
+        // Obtener información de los participantes
+        const pagador = getParticipantById(pago.de);
+        const receptor = getParticipantById(pago.para);
+        
+        // Obtener la cantidad de personas que representa el deudor
+        const pagadorPersonCount = pagador ? getParticipantPersonCount(eventId, pago.de) : 1;
+        
+        // Formato: icono {deudor} (personas) --> *{Monto}* --> {Cobrador}
+        const pagadorTexto = pagadorPersonCount > 1 ? `_${pago.deNombre} (${pagadorPersonCount})_` : `_${pago.deNombre}_`;
+        
+        contenidoCompartir += `${statusEmoji} ${pagadorTexto} --> *$${formatCurrency(parseFloat(pago.monto))}* --> _${pago.paraNombre}_`;
         
         // Si hay un alias, agregarlo
-        const receptor = getParticipantById(pago.para);
         if (receptor?.aliasCBU) {
           contenidoCompartir += `\nAlias: \`${receptor.aliasCBU}\``;
         }
@@ -487,7 +495,7 @@ export default function ExpenseSummaryScreen() {
                           />
                           <Text style={styles.participanteNombre}>
                             {participante.name}
-                            {personCount > 1 ? ` x ${personCount}` : ''}
+                            {personCount > 1 ? ` (${personCount})` : ''}
                           </Text>
                         </View>
                       );

@@ -588,7 +588,7 @@ export default function HomeScreen() {
                           <Ionicons name="person-outline" size={20} color={colors.textPrimary} />
                           <Text style={homeStyles.partName}>
                             {item.name}
-                            {personCount > 1 ? ` x ${personCount}` : ''}
+                            {personCount > 1 ? ` (${personCount})` : ''}
                           </Text>
                         </View>
                       );
