@@ -587,16 +587,13 @@ export default function ExpenseSummaryScreen() {
                   
                   <View style={styles.modalButtonsRow}>
                     <TouchableOpacity
-                      style={[commonStyles.button, selectedPago.estadoPago ? commonStyles.cancelBtn : commonStyles.saveBtn]}
-                      onPress={() => {
-                        updatePagoEstado(eventId, selectedPago.id, true);
-                        setPagoModalVisible(false);
-                      }}
+                      style={[commonStyles.button, commonStyles.cancelBtn]}
+                      onPress={() => setPagoModalVisible(false)}
                     >
-                      <Text style={commonStyles.buttonText}>Marcar como Pagado</Text>
+                      <Text style={commonStyles.buttonText}>Cerrar</Text>
                     </TouchableOpacity>
                     
-                    {selectedPago.estadoPago && (
+                    {selectedPago.estadoPago ? (
                       <TouchableOpacity
                         style={[commonStyles.button, commonStyles.cancelBtn]}
                         onPress={() => {
@@ -606,17 +603,20 @@ export default function ExpenseSummaryScreen() {
                       >
                         <Text style={commonStyles.buttonText}>Desmarcar Pago</Text>
                       </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={[commonStyles.button, commonStyles.saveBtn]}
+                        onPress={() => {
+                          updatePagoEstado(eventId, selectedPago.id, true);
+                          setPagoModalVisible(false);
+                        }}
+                      >
+                        <Text style={commonStyles.buttonText}>Marcar como Pagado</Text>
+                      </TouchableOpacity>
                     )}
                   </View>
                 </>
               )}
-              
-              <TouchableOpacity
-                style={[commonStyles.button, commonStyles.cancelBtn]}
-                onPress={() => setPagoModalVisible(false)}
-              >
-                <Text style={commonStyles.buttonText}>Cerrar</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -890,3 +890,4 @@ const styles = StyleSheet.create({
     color: '#000000', // Color negro para el texto del botón
   },
 });
+
