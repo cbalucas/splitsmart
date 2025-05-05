@@ -69,6 +69,14 @@ export default StyleSheet.create({
     marginLeft: 4
   },
   
+  // Estilo para el texto del total de personas
+  totalPersonsText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2
+  },
+  
   // Acciones de eventos
   actions: {
     flexDirection: 'row',

@@ -111,4 +111,53 @@ export default StyleSheet.create({
   singleButtonContainer: {
     marginTop: 16
   },
+
+  // Nuevos estilos para el contador de personas
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 2
+  },
+  counterBtn: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12
+  },
+  counterText: {
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingHorizontal: 6,
+    minWidth: 20,
+    textAlign: 'center'
+  },
+  countLabel: {
+    color: colors.primary,
+    fontSize: 12,
+    marginTop: 2
+  },
+  
+  // Estilos para el modal con contador de participantes
+  participantCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    justifyContent: 'space-between'
+  },
+  participantCountLabel: {
+    color: colors.textPrimary,
+    fontSize: 16
+  },
+
+  // Estilos para botones deshabilitados
+  disabledBtn: {
+    opacity: 0.5
+  },
 });

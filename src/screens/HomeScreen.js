@@ -38,6 +38,7 @@ export default function HomeScreen() {
     getGastosForEvent,
     updateEventTotals,
     calculateTotalGastos,
+    getTotalPersonCount
   } = useContext(EventContext);
 
   // Actualizar totales de eventos al cargar la pantalla de forma segura
@@ -274,8 +275,14 @@ export default function HomeScreen() {
     const mapClr = item.map ? colors.secondary : colors.textDisabled;
     const lockIcon = item.estadoEvento ? 'lock-open-outline' : 'lock-closed-outline';
     const lockClr = item.estadoEvento ? colors.primary : colors.danger;
+    
+    // Obtenemos cantidad de participantes registrados
     const participantes = getParticipantsForEvent(item.id);
     const cnt = participantes.length;
+    
+    // Obtener cantidad total de personas (suma de cantParticipantes)
+    const totalPersonas = getTotalPersonCount(item.id);
+    
     const gastos = getGastosForEvent(item.id);
     const tieneGastos = gastos.length > 0;
     const totalFmt = (item.total ?? 0).toLocaleString();
@@ -305,6 +312,7 @@ export default function HomeScreen() {
                 <Ionicons name="people-outline" size={16} color={participantesClr} />
                 <Text style={homeStyles.eventParticipantsCount}>{cnt}</Text>
               </View>
+              <Text style={homeStyles.totalPersonsText}>Total personas: {totalPersonas}</Text>
             </View>
           </View>
         </TouchableOpacity>

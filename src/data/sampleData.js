@@ -22,28 +22,28 @@ export const sampleEvents = [
 
   export const sampleEventsParticipants = [
     // PARTICIPANTES 4 - EVENTO 1
-    { id: '1', participantsId: '1',  eventsId:'1' },
-    { id: '2', participantsId: '3',  eventsId:'1' },
-    { id: '3', participantsId: '7',  eventsId:'1' },
-    { id: '4', participantsId: '4',  eventsId:'1' },
+    { id: '1', participantsId: '1',  eventsId:'1', cantParticipantes: 1 },
+    { id: '2', participantsId: '3',  eventsId:'1', cantParticipantes: 1 },
+    { id: '3', participantsId: '7',  eventsId:'1' , cantParticipantes: 1 },
+    { id: '4', participantsId: '4',  eventsId:'1',  cantParticipantes: 2 },
     // PARTICIPANTES 5 - EVENTO 2
-    { id: '9', participantsId: '5',  eventsId:'2' },
-    { id: '10', participantsId: '6',  eventsId:'2' },
-    { id: '11', participantsId: '1',  eventsId:'2' },
-    { id: '6', participantsId: '3',  eventsId:'2' },
-    { id: '12', participantsId: '2',  eventsId:'2' },
+    { id: '9', participantsId: '5',  eventsId:'2',cantParticipantes: 1 },
+    { id: '10', participantsId: '6',  eventsId:'2' ,cantParticipantes: 1 },
+    { id: '11', participantsId: '1',  eventsId:'2' ,cantParticipantes: 1 },
+    { id: '6', participantsId: '3',  eventsId:'2' ,cantParticipantes: 1 },
+    { id: '12', participantsId: '2',  eventsId:'2',cantParticipantes: 1 },
     // PARTICIPANTES 3 - EVENTO 3
-    { id: '5', participantsId: '1',  eventsId:'3' },
-    { id: '8', participantsId: '2',  eventsId:'3' },
-    { id: '7', participantsId: '7',  eventsId:'3' },
+    { id: '5', participantsId: '1',  eventsId:'3' ,cantParticipantes: 1 },
+    { id: '8', participantsId: '2',  eventsId:'3' ,cantParticipantes: 2 },
+    { id: '7', participantsId: '7',  eventsId:'3' ,cantParticipantes: 1 },
     // PARTICIPANTES 3 - EVENTO 4
-    { id: '13', participantsId: '1',  eventsId:'4' },
-    { id: '14', participantsId: '2',  eventsId:'4' },
-    { id: '15', participantsId: '3',  eventsId:'4' },
-    { id: '16', participantsId: '4',  eventsId:'4' },
-    { id: '17', participantsId: '6',  eventsId:'4' },
-    { id: '18', participantsId: '7',  eventsId:'4' },
-    { id: '19', participantsId: '8',  eventsId:'4' },
+    { id: '13', participantsId: '1',  eventsId:'4',cantParticipantes: 2 },
+    { id: '14', participantsId: '2',  eventsId:'4',cantParticipantes: 2 },
+    { id: '15', participantsId: '3',  eventsId:'4',cantParticipantes: 2 },
+    { id: '16', participantsId: '4',  eventsId:'4',cantParticipantes: 2 },
+    { id: '17', participantsId: '6',  eventsId:'4',cantParticipantes: 2 },
+    { id: '18', participantsId: '7',  eventsId:'4',cantParticipantes: 2 },
+    { id: '19', participantsId: '8',  eventsId:'4' ,cantParticipantes: 1 },
   ];
 
   export const sampleGastos = [

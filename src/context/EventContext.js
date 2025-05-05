@@ -41,8 +41,15 @@ export function EventProvider({ children }) {
         id: (relations.length + idx + 1).toString(),
         eventsId: newId,
         participantsId: pid,
+        cantParticipantes: 1 // Por defecto, cada participante representa 1 persona
       }));
       setRelations((prev) => [...prev, ...nextRels]);
+      
+      // Actualizar el conteo total de personas
+      setTimeout(() => {
+        updateParticipantCount(newId);
+        updateEventTotals(newId);
+      }, 0);
     }
   };
 
@@ -61,7 +68,7 @@ export function EventProvider({ children }) {
       .filter(p => p); // Filtrar null/undefined
 
   // 4) Añade participante a evento
-  const addParticipantToEvent = (eventId, participantId) => {
+  const addParticipantToEvent = (eventId, participantId, cantParticipantes = 1) => {
     if (
       relations.some(
         (r) =>
@@ -73,13 +80,12 @@ export function EventProvider({ children }) {
       id: (relations.length + 1).toString(),
       eventsId: eventId,
       participantsId: participantId,
+      cantParticipantes: cantParticipantes
     };
     setRelations((rel) => [...rel, newRel]);
-    // incrementa el contador en el evento
-    const newParticipantCount = getParticipantsForEvent(eventId).length + 1;
-    updateEvent(eventId, {
-      participants: newParticipantCount,
-    });
+    
+    // Actualizamos el contador en el evento con el recuento total de personas
+    updateParticipantCount(eventId);
     
     // Actualizar el costo por persona después de añadir participante
     updateEventTotals(eventId);
@@ -97,11 +103,9 @@ export function EventProvider({ children }) {
             )
         )
       );
-      // decrementa contador
-      const newParticipantCount = getParticipantsForEvent(eventId).length - 1;
-      updateEvent(eventId, {
-        participants: newParticipantCount,
-      });
+      
+      // Actualizar el contador de participantes después de eliminar
+      updateParticipantCount(eventId);
       
       // Actualizar el costo por persona después de quitar participante
       updateEventTotals(eventId);
@@ -139,15 +143,42 @@ export function EventProvider({ children }) {
   // 6.2) Actualiza los totales de gastos y costo por persona para un evento
   const updateEventTotals = (eventId) => {
     const totalGastos = calculateTotalGastos(eventId);
-    const participantesCount = getParticipantsForEvent(eventId).length || 1;
-    const costoPorPersona = participantesCount > 0 ? totalGastos / participantesCount : 0;
+    const totalPersonCount = getTotalPersonCount(eventId);
+    
+    // Usamos el número total de personas (cantParticipantes) para el cálculo
+    const costoPorPersona = totalPersonCount > 0 ? totalGastos / totalPersonCount : 0;
     
     updateEvent(eventId, {
       total: totalGastos,
       per: parseFloat(costoPorPersona.toFixed(2)),
+      totalPersonCount: totalPersonCount // Guardamos el conteo total de personas
     });
     
-    return { total: totalGastos, per: costoPorPersona };
+    return { total: totalGastos, per: costoPorPersona, totalPersonCount };
+  };
+
+  // Función para contar el número total de personas en un evento (sumando cantParticipantes)
+  const getTotalPersonCount = (eventId) => {
+    const eventRelations = relations.filter(r => r.eventsId === eventId);
+    return eventRelations.reduce((total, relation) => {
+      // Si no tiene cantParticipantes o es menor a 1, contamos como 1
+      const cantParticipantes = relation.cantParticipantes && relation.cantParticipantes >= 1 
+        ? relation.cantParticipantes : 1;
+      return total + cantParticipantes;
+    }, 0);
+  };
+
+  // Función para actualizar el contador de participantes de un evento
+  const updateParticipantCount = (eventId) => {
+    const totalPersonCount = getTotalPersonCount(eventId);
+    const participantCount = getParticipantsForEvent(eventId).length;
+    
+    updateEvent(eventId, {
+      participants: participantCount, // Mantenemos el número de participantes registrados
+      totalPersonCount: totalPersonCount // Nuevo campo para el total de personas
+    });
+    
+    return { participantCount, totalPersonCount };
   };
 
   // 7) Obtiene participante por ID
@@ -296,6 +327,7 @@ export function EventProvider({ children }) {
     gastos,
     getGastosForEvent,
     relations,
+    setRelations, // Exponiendo setRelations para poder usarlo en componentes
     getParticipantById,
     updatePagoEstado,
     getPagosEstado,
@@ -309,7 +341,9 @@ export function EventProvider({ children }) {
     removeParticipant,
     // Funciones adicionales
     calculateTotalGastos,
-    updateEventTotals
+    updateEventTotals,
+    getTotalPersonCount,
+    updateParticipantCount
   };
 
   return (

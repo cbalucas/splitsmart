@@ -28,7 +28,10 @@ export default function ParticipantsScreen() {
     getParticipantsForEvent, 
     addParticipantToEvent, 
     removeParticipantFromEvent,
-    updateEventTotals
+    updateEventTotals,
+    relations,
+    setRelations,
+    getTotalPersonCount
   } = useContext(EventContext);
   const navigation = useNavigation();
   const route = useRoute();
@@ -57,6 +60,42 @@ export default function ParticipantsScreen() {
   const [newAlias, setNewAlias] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newEmail, setNewEmail] = useState('');
+
+  const [cantParticipantes, setCantParticipantes] = useState(1);
+  const [newCantParticipantes, setNewCantParticipantes] = useState(1);
+  
+  // Función para obtener la cantidad de participantes de una relación
+  const getParticipantCount = (participantId) => {
+    if (!eventId) return 1;
+    
+    const relation = relations.find(r => r.eventsId === eventId && r.participantsId === participantId);
+    return relation?.cantParticipantes || 1;
+  };
+  
+  // Función para actualizar la cantidad de participantes en una relación
+  const updateParticipantCount = (participantId, count) => {
+    if (!eventId) return;
+    
+    // Buscar la relación específica
+    const relation = relations.find(r => r.eventsId === eventId && r.participantsId === participantId);
+    if (relation) {
+      // Actualizar la relación en el estado
+      const updatedRelations = relations.map(r => 
+        (r.id === relation.id) ? { ...r, cantParticipantes: count } : r
+      );
+      
+      // Actualizar el estado global
+      setRelations(updatedRelations);
+      
+      // Actualizar los totales del evento
+      setTimeout(() => {
+        updateEventTotals(eventId);
+      }, 0);
+      
+      return true;
+    }
+    return false;
+  };
 
   // Función para navegar al Home
   const goToHome = useCallback(() => {
@@ -152,6 +191,14 @@ export default function ParticipantsScreen() {
     setAlias(p.aliasCBU || '');
     setPhone(p.phone || '');
     setEmail(p.email || '');
+    
+    // Cargar cantParticipantes si está en el evento
+    if (eventId && isParticipantInEvent(p.id)) {
+      setCantParticipantes(getParticipantCount(p.id));
+    } else {
+      setCantParticipantes(1); // Valor predeterminado
+    }
+    
     setIsEditing(false);
     setModalVisible(true);
   };
@@ -177,6 +224,11 @@ export default function ParticipantsScreen() {
       });
       
       if (result) {
+        // Si el participante está en el evento actual, actualizar su cantidad de participantes
+        if (eventId && isParticipantInEvent(selectedId)) {
+          updateParticipantCount(selectedId, cantParticipantes);
+        }
+        
         Alert.alert('Éxito', 'Participante actualizado correctamente');
         setErrors({name: false});
         setIsEditing(false);
@@ -274,9 +326,19 @@ export default function ParticipantsScreen() {
 
   const renderItem = ({ item }) => {
     const isInEvent = eventId ? isParticipantInEvent(item.id) : false;
+    const personCount = isInEvent ? getParticipantCount(item.id) : 1;
     
     return (
-      <TouchableOpacity style={participantStyles.card} onPress={() => openView(item)}>
+      <TouchableOpacity 
+        style={participantStyles.card} 
+        onPress={() => {
+          if (isInEvent) {
+            // Si está en el evento, cargamos la cantidad actual de participantes
+            setCantParticipantes(personCount);
+          }
+          openView(item);
+        }}
+      >
         <Ionicons 
           name="person-outline" 
           size={40} 
@@ -286,8 +348,58 @@ export default function ParticipantsScreen() {
         <View style={participantStyles.info}>
           <Text style={participantStyles.name}>{item.name}</Text>
           <Text style={participantStyles.alias}>{item.aliasCBU}</Text>
+          
+          {isInEvent && personCount > 1 && (
+            <Text style={participantStyles.countLabel}>
+              Representa a {personCount} personas
+            </Text>
+          )}
         </View>
         <View style={participantStyles.actions}>
+          {isInEvent && (
+            <View style={participantStyles.counterContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (personCount > 1) {
+                    updateParticipantCount(item.id, personCount - 1);
+                  }
+                }}
+                style={[
+                  participantStyles.counterBtn,
+                  personCount <= 1 ? participantStyles.disabledBtn : null
+                ]}
+                disabled={personCount <= 1}
+              >
+                <Ionicons 
+                  name="remove" 
+                  size={18} 
+                  color={personCount <= 1 ? colors.textDisabled : colors.danger} 
+                />
+              </TouchableOpacity>
+              
+              <Text style={participantStyles.counterText}>{personCount}</Text>
+              
+              <TouchableOpacity
+                onPress={() => {
+                  if (personCount < 10) {
+                    updateParticipantCount(item.id, personCount + 1);
+                  }
+                }}
+                style={[
+                  participantStyles.counterBtn,
+                  personCount >= 10 ? participantStyles.disabledBtn : null
+                ]}
+                disabled={personCount >= 10}
+              >
+                <Ionicons 
+                  name="add" 
+                  size={18} 
+                  color={personCount >= 10 ? colors.textDisabled : colors.primary} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+          
           <Ionicons
             name="phone-portrait-outline"
             size={20}
@@ -569,6 +681,58 @@ export default function ParticipantsScreen() {
                 autoCapitalize="none"
               />
             </View>
+            
+            {/* Cantidad de participantes (solo para participantes en el evento actual) */}
+            {eventId && isParticipantInEvent(selectedId) && (
+              <View style={participantStyles.participantCountContainer}>
+                <Text style={participantStyles.participantCountLabel}>
+                  Cantidad de personas que representa:
+                </Text>
+                <View style={participantStyles.counterContainer}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (cantParticipantes > 1) {
+                        setCantParticipantes(cantParticipantes - 1);
+                        // Si no estamos en modo edición, actualizamos directamente
+                        if (!isEditing) {
+                          updateParticipantCount(selectedId, cantParticipantes - 1);
+                        }
+                      }
+                    }}
+                    style={participantStyles.counterBtn}
+                    disabled={cantParticipantes <= 1 || (!isEditing && modalMode !== 'view')}
+                  >
+                    <Ionicons 
+                      name="remove" 
+                      size={18} 
+                      color={cantParticipantes <= 1 ? colors.textDisabled : colors.danger} 
+                    />
+                  </TouchableOpacity>
+                  
+                  <Text style={participantStyles.counterText}>{cantParticipantes}</Text>
+                  
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (cantParticipantes < 10) {
+                        setCantParticipantes(cantParticipantes + 1);
+                        // Si no estamos en modo edición, actualizamos directamente
+                        if (!isEditing) {
+                          updateParticipantCount(selectedId, cantParticipantes + 1);
+                        }
+                      }
+                    }}
+                    style={participantStyles.counterBtn}
+                    disabled={cantParticipantes >= 10 || (!isEditing && modalMode !== 'view')}
+                  >
+                    <Ionicons 
+                      name="add" 
+                      size={18} 
+                      color={cantParticipantes >= 10 ? colors.textDisabled : colors.primary} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
             
             <View style={participantStyles.buttonRow}>
               <TouchableOpacity
