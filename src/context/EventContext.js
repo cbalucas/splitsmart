@@ -3,8 +3,8 @@ import React, { createContext, useState } from 'react';
 import {
   sampleEvents,
   sampleParticipants,
-  sampleEventsParticipants,
-  sampleGastos,
+  sampleEvents_Participants,
+  sampleExpense,
 } from '../data/sampleData';
 
 export const EventContext = createContext();
@@ -12,8 +12,8 @@ export const EventContext = createContext();
 export function EventProvider({ children }) {
   const [events, setEvents] = useState(sampleEvents);
   const [participants, setParticipants] = useState(sampleParticipants);
-  const [relations, setRelations] = useState(sampleEventsParticipants);
-  const [gastos, setGastos] = useState(sampleGastos);
+  const [relations, setRelations] = useState(sampleEvents_Participants);
+  const [gastos, setGastos] = useState(sampleExpense);
   const [pagosPorEvento, setPagosPorEvento] = useState({});
 
   // 1) Añade un nuevo evento y sus relaciones

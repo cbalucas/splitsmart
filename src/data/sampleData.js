@@ -20,7 +20,7 @@ export const sampleEvents = [
 
   ];
 
-  export const sampleEventsParticipants = [
+  export const sampleEvents_Participants = [
     // PARTICIPANTES 4 - EVENTO 1
     { id: '1', participantsId: '1',  eventsId:'1', cantParticipantes: 1 },
     { id: '2', participantsId: '3',  eventsId:'1', cantParticipantes: 1 },
@@ -46,7 +46,7 @@ export const sampleEvents = [
     { id: '19', participantsId: '8',  eventsId:'4' ,cantParticipantes: 1 },
   ];
 
-  export const sampleGastos = [
+  export const sampleExpense = [
     // EVENTO 1
     { id: '1', descripcion: 'Carne',  monto:'50000,00',eventsParticipantsId: '4',  date: '2025-04-10' },
     { id: '3', descripcion: 'Bebida',  monto:'5752,50',eventsParticipantsId: '1',  date: '2025-04-10' },

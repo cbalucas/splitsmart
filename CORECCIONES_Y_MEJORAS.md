@@ -2,6 +2,12 @@
 
 ## ORDENAR Y ACOMODAR
 <!-- Aca se colocan todas las observaciones que hasta el momento no se han clasificado ni categorizado. -->
+#. Se deben cambiar el x y la cantidad de participantes por ({cantParticipantes}) en las visualizaciones de eventos, resumen
+    hoy 
+        Lukitas x 2
+    Corregido
+        Lukitas (2)
+#. Agregar la cantidad de personas que representa el participante en la seccion de Pagos del whatapp agregandolo entre parentesis a continuacion del nombre.
 
 
 ## Home
