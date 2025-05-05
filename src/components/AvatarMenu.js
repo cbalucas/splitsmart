@@ -109,7 +109,6 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                 {expandedSection === 'profile' && (
                                     <View style={styles.submenu}>
                                         {[
-                                            { icon: "image", label: "Imagen" },
                                             { icon: "person", label: "Usuario" },
                                             { icon: "mail", label: "Email" },
                                             { icon: "call", label: "Celular" }
@@ -149,9 +148,11 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                 {expandedSection === 'settings' && (
                                     <View style={styles.submenu}>
                                         {[
+                                            { icon: "person-outline", label: "Perfil" },
                                             { icon: "color-palette", label: "Tema" },
                                             { icon: "language", label: "Idioma" },
-                                            { icon: "notifications", label: "Notificaciones" }
+                                            { icon: "notifications", label: "Notificaciones" },
+                                            { icon: "notifications", label: "Confirmacion de Acciones" }
                                         ].map((item, index) => (
                                             <TouchableOpacity 
                                                 key={index} 

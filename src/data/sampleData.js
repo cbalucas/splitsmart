@@ -70,7 +70,7 @@ export const sampleEvents = [
   ];
 
 
-  // export const samplePagos = [
-  //   { id: '1', gastoId: '',  eventsParticipantsId: '4',monto:'50000' },
-  //   // … más participantes …
-  // ];
+  export const sampleProfile = [
+    { id: '1', usuario: 'Lucas',  password: '4',monto:'50000' },
+    // … más participantes …
+  ];
