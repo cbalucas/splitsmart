@@ -1,5 +1,5 @@
 // src/screens/ExpenseSummaryScreen.js
-import React, { useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,6 +9,8 @@ import {
   ScrollView,
   Share,
   Modal,
+  BackHandler,
+  Animated,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -29,6 +31,43 @@ export default function ExpenseSummaryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { eventId } = route.params;
+
+  // Valores de animación para la transición suave
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Inicio de la animación cuando la pantalla gana foco
+  useFocusEffect(
+    useCallback(() => {
+      // Animar la entrada de la pantalla
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      return () => {
+        // No resetear la opacidad al salir para evitar parpadeos
+        // Solo guardamos el estado actual
+      };
+    }, [fadeAnim])
+  );
+
+  // Manejo del botón de hardware Back
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Animar la salida antes de navegar de vuelta
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => {
+        navigation.goBack();
+      });
+      return true; // Prevenir comportamiento por defecto
+    });
+
+    return () => backHandler.remove();
+  }, [navigation, fadeAnim]);
 
   const {
     events,
@@ -313,274 +352,275 @@ export default function ExpenseSummaryScreen() {
 
   return (
     <SafeAreaView style={commonStyles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>RESUMEN DE GASTOS Y PAGOS</Text>
-        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <Ionicons name="share-social-outline" size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>RESUMEN DE GASTOS Y PAGOS</Text>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+            <Ionicons name="share-social-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView style={styles.contentContainer}>
-        {/* Información del evento */}
-        <View style={styles.eventInfoContainer}>
-          <Text style={styles.eventName}>{event?.name || ''}</Text>
-          <Text style={styles.eventDate}>{event?.date || ''}</Text>
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Total del evento:</Text>
-            <Text style={styles.totalAmount}>${formatCurrency(totalGastos)}</Text>
+        <ScrollView style={styles.contentContainer}>
+          {/* Información del evento */}
+          <View style={styles.eventInfoContainer}>
+            <Text style={styles.eventName}>{event?.name || ''}</Text>
+            <Text style={styles.eventDate}>{event?.date || ''}</Text>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Total del evento:</Text>
+              <Text style={styles.totalAmount}>${formatCurrency(totalGastos)}</Text>
+            </View>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Gastos c/u:</Text>
+              <Text style={styles.totalAmount}>${formatCurrency(promedioPorPersona)}</Text>
+            </View>
           </View>
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Gastos c/u:</Text>
-            <Text style={styles.totalAmount}>${formatCurrency(promedioPorPersona)}</Text>
-          </View>
-        </View>
 
-        {/* Lista de gastos - Desplegable */}
-        <View style={styles.sectionContainer}>
-          <TouchableOpacity 
-            style={styles.sectionHeader} 
-            onPress={() => setShowGastos(!showGastos)}
-          >
-            <Text style={styles.sectionTitle}>LISTA DE GASTOS</Text>
-            <Ionicons 
-              name={showGastos ? "chevron-up-outline" : "chevron-down-outline"} 
-              size={24} 
-              color={colors.primary} 
-            />
-          </TouchableOpacity>
-          
-          {showGastos && (
-            <>
-              {gastos.length === 0 ? (
-                <Text style={styles.noData}>No hay gastos registrados</Text>
-              ) : (
-                gastos.map(gasto => {
-                  const relacion = relations.find(r => r.id === gasto.eventsParticipantsId);
-                  const participante = relacion 
-                    ? getParticipantById(relacion.participantsId) 
-                    : null;
-                  
-                  const monto = getMonto(gasto.monto);
-                  
-                  return (
-                    <View key={gasto.id} style={styles.gastoItem}>
-                      <View style={styles.gastoDescripcion}>
-                        <Text style={styles.gastoTexto}>{gasto.descripcion}</Text>
-                        <Text style={styles.gastoPagadoPor}>
-                          Pagado por: {participante?.name || 'Desconocido'}
-                        </Text>
-                      </View>
-                      <Text style={styles.gastoMonto}>${formatCurrency(monto)}</Text>
-                    </View>
-                  );
-                })
-              )}
-            </>
-          )}
-        </View>
-
-        {/* Gastos por participante - Desplegable */}
-        <View style={styles.sectionContainer}>
-          <TouchableOpacity 
-            style={styles.sectionHeader} 
-            onPress={() => setShowGastosPorPersona(!showGastosPorPersona)}
-          >
-            <Text style={styles.sectionTitle}>GASTOS POR PERSONA</Text>
-            <Ionicons 
-              name={showGastosPorPersona ? "chevron-up-outline" : "chevron-down-outline"} 
-              size={24} 
-              color={colors.primary} 
-            />
-          </TouchableOpacity>
-          
-          {showGastosPorPersona && (
-            <>
-              {participants.length === 0 ? (
-                <Text style={styles.noData}>No hay participantes</Text>
-              ) : (
-                participants
-                  // Filtrar participantes con gastos mayores a 0
-                  .filter(participante => (gastosPorParticipante[participante.id] || 0) > 0)
-                  .map(participante => (
-                    <View key={participante.id} style={styles.participanteItem}>
-                      <Text style={styles.participanteNombre}>{participante.name}</Text>
-                      <Text style={styles.participanteGasto}>
-                        ${formatCurrency(gastosPorParticipante[participante.id] || 0)}
-                      </Text>
-                    </View>
-                  ))
-              )}
-            </>
-          )}
-        </View>
-
-        {/* Lista de participantes - Desplegable */}
-        <View style={styles.sectionContainer}>
-          <TouchableOpacity 
-            style={styles.sectionHeader} 
-            onPress={() => setShowParticipantes(!showParticipantes)}
-          >
-            <Text style={styles.sectionTitle}>PARTICIPANTES</Text>
-            <Ionicons 
-              name={showParticipantes ? "chevron-up-outline" : "chevron-down-outline"} 
-              size={24} 
-              color={colors.primary} 
-            />
-          </TouchableOpacity>
-          
-          {showParticipantes && (
-            <>
-              {participants.length === 0 ? (
-                <Text style={styles.noData}>No hay participantes registrados</Text>
-              ) : (
-                <View style={styles.participantesGrid}>
-                  {participants.map(participante => {
-                    // Obtener la cantidad de personas que representa este participante
-                    const personCount = getParticipantPersonCount(eventId, participante.id);
+          {/* Lista de gastos - Desplegable */}
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity 
+              style={styles.sectionHeader} 
+              onPress={() => setShowGastos(!showGastos)}
+            >
+              <Text style={styles.sectionTitle}>LISTA DE GASTOS</Text>
+              <Ionicons 
+                name={showGastos ? "chevron-up-outline" : "chevron-down-outline"} 
+                size={24} 
+                color={colors.primary} 
+              />
+            </TouchableOpacity>
+            
+            {showGastos && (
+              <>
+                {gastos.length === 0 ? (
+                  <Text style={styles.noData}>No hay gastos registrados</Text>
+                ) : (
+                  gastos.map(gasto => {
+                    const relacion = relations.find(r => r.id === gasto.eventsParticipantsId);
+                    const participante = relacion 
+                      ? getParticipantById(relacion.participantsId) 
+                      : null;
+                    
+                    const monto = getMonto(gasto.monto);
+                    
                     return (
-                      <View key={participante.id} style={styles.participanteGridItem}>
-                        <Ionicons 
-                          name="person-outline" 
-                          size={16} 
-                          color={colors.textSecondary} 
-                        />
-                        <Text style={styles.participanteNombre}>
-                          {participante.name}
-                          {personCount > 1 ? ` x ${personCount}` : ''}
-                        </Text>
+                      <View key={gasto.id} style={styles.gastoItem}>
+                        <View style={styles.gastoDescripcion}>
+                          <Text style={styles.gastoTexto}>{gasto.descripcion}</Text>
+                          <Text style={styles.gastoPagadoPor}>
+                            Pagado por: {participante?.name || 'Desconocido'}
+                          </Text>
+                        </View>
+                        <Text style={styles.gastoMonto}>${formatCurrency(monto)}</Text>
                       </View>
                     );
-                  })}
-                </View>
-              )}
-            </>
-          )}
-        </View>
+                  })
+                )}
+              </>
+            )}
+          </View>
 
-        {/* Pagos a realizar */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>PAGOS A REALIZAR</Text>
-          {pagosProcesados.length > 0 ? (
-            pagosProcesados.map((pago, index) => {
-              const pagador = getParticipantById(pago.de);
-              const receptor = getParticipantById(pago.para);
-              const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
-              
-              return (
-                <TouchableOpacity
-                  key={index} 
-                  style={styles.pagoItem}
-                  onPress={() => {
-                    setSelectedPago({
-                      id: `${pago.de}_${pago.para}_${pago.monto}`,
-                      de: pago.de,
-                      deNombre: pagador?.name || pago.deNombre,
-                      para: pago.para,
-                      paraNombre: receptor?.name || pago.paraNombre,
-                      monto: pago.monto,
-                      estadoPago: isPagado
-                    });
-                    setPagoModalVisible(true);
-                  }}
-                >
-                  <View style={styles.pagoFlexContainer}>
-                    <Text style={[styles.pagador, isPagado && styles.textoInactivo]}>
-                      {pagador?.name || pago.deNombre}
-                    </Text>
-                    <View style={styles.montoContainer}>
-                      <Text style={[styles.pagoMonto, isPagado && styles.textoInactivo]}>
-                        ${formatCurrency(parseFloat(pago.monto))}
-                      </Text>
-                      {receptor?.aliasCBU && (
-                        <Text style={[styles.aliasCBU, isPagado && styles.textoInactivo]}>
-                          Alias: {receptor.aliasCBU}
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={[styles.receptor, isPagado && styles.textoInactivo]}>
-                      {receptor?.name || pago.paraNombre}
-                    </Text>
-                  </View>
-                  {isPagado && (
-                    <View style={styles.pagadoIndicator}>
-                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                      <Text style={styles.pagadoText}>Pagado</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })
-          ) : (
-            <Text style={styles.noPagos}>No hay pagos pendientes</Text>
-          )}
-        </View>
-        
-        {/* Espacio adicional al final para que no se corte la última sección */}
-        <View style={styles.bottomSpace} />
-      </ScrollView>
-      
-      {/* Modal para marcar un pago como realizado */}
-      <Modal
-        transparent
-        visible={pagoModalVisible}
-        animationType="fade"
-        onRequestClose={() => setPagoModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Estado del Pago</Text>
-            </View>
+          {/* Gastos por participante - Desplegable */}
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity 
+              style={styles.sectionHeader} 
+              onPress={() => setShowGastosPorPersona(!showGastosPorPersona)}
+            >
+              <Text style={styles.sectionTitle}>GASTOS POR PERSONA</Text>
+              <Ionicons 
+                name={showGastosPorPersona ? "chevron-up-outline" : "chevron-down-outline"} 
+                size={24} 
+                color={colors.primary} 
+              />
+            </TouchableOpacity>
             
-            {selectedPago && (
+            {showGastosPorPersona && (
               <>
-                <View style={styles.pagoDetailContainer}>
-                  <Text style={styles.pagoDetailText}>
-                    <Text style={styles.pagador}>{selectedPago.deNombre}</Text>
-                    {' -> '}
-                    <Text style={styles.pagoMonto}>${formatCurrency(parseFloat(selectedPago.monto))}</Text>
-                    {' -> '}
-                    <Text style={styles.receptor}>{selectedPago.paraNombre}</Text>
-                  </Text>
-                </View>
+                {participants.length === 0 ? (
+                  <Text style={styles.noData}>No hay participantes</Text>
+                ) : (
+                  participants
+                    // Filtrar participantes con gastos mayores a 0
+                    .filter(participante => (gastosPorParticipante[participante.id] || 0) > 0)
+                    .map(participante => (
+                      <View key={participante.id} style={styles.participanteItem}>
+                        <Text style={styles.participanteNombre}>{participante.name}</Text>
+                        <Text style={styles.participanteGasto}>
+                          ${formatCurrency(gastosPorParticipante[participante.id] || 0)}
+                        </Text>
+                      </View>
+                    ))
+                )}
+              </>
+            )}
+          </View>
+
+          {/* Lista de participantes - Desplegable */}
+          <View style={styles.sectionContainer}>
+            <TouchableOpacity 
+              style={styles.sectionHeader} 
+              onPress={() => setShowParticipantes(!showParticipantes)}
+            >
+              <Text style={styles.sectionTitle}>PARTICIPANTES</Text>
+              <Ionicons 
+                name={showParticipantes ? "chevron-up-outline" : "chevron-down-outline"} 
+                size={24} 
+                color={colors.primary} 
+              />
+            </TouchableOpacity>
+            
+            {showParticipantes && (
+              <>
+                {participants.length === 0 ? (
+                  <Text style={styles.noData}>No hay participantes registrados</Text>
+                ) : (
+                  <View style={styles.participantesGrid}>
+                    {participants.map(participante => {
+                      // Obtener la cantidad de personas que representa este participante
+                      const personCount = getParticipantPersonCount(eventId, participante.id);
+                      return (
+                        <View key={participante.id} style={styles.participanteGridItem}>
+                          <Ionicons 
+                            name="person-outline" 
+                            size={16} 
+                            color={colors.textSecondary} 
+                          />
+                          <Text style={styles.participanteNombre}>
+                            {participante.name}
+                            {personCount > 1 ? ` x ${personCount}` : ''}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+
+          {/* Pagos a realizar */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>PAGOS A REALIZAR</Text>
+            {pagosProcesados.length > 0 ? (
+              pagosProcesados.map((pago, index) => {
+                const pagador = getParticipantById(pago.de);
+                const receptor = getParticipantById(pago.para);
+                const isPagado = pagosEstado[`${pago.de}_${pago.para}_${pago.monto}`] || false;
                 
-                <View style={styles.modalButtonsRow}>
+                return (
                   <TouchableOpacity
-                    style={[styles.modalButton, selectedPago.estadoPago ? styles.buttonInactive : styles.buttonActive]}
+                    key={index} 
+                    style={styles.pagoItem}
                     onPress={() => {
-                      updatePagoEstado(eventId, selectedPago.id, true);
-                      setPagoModalVisible(false);
+                      setSelectedPago({
+                        id: `${pago.de}_${pago.para}_${pago.monto}`,
+                        de: pago.de,
+                        deNombre: pagador?.name || pago.deNombre,
+                        para: pago.para,
+                        paraNombre: receptor?.name || pago.paraNombre,
+                        monto: pago.monto,
+                        estadoPago: isPagado
+                      });
+                      setPagoModalVisible(true);
                     }}
                   >
-                    <Text style={styles.buttonText}>Marcar como Pagado</Text>
+                    <View style={styles.pagoFlexContainer}>
+                      <Text style={[styles.pagador, isPagado && styles.textoInactivo]}>
+                        {pagador?.name || pago.deNombre}
+                      </Text>
+                      <View style={styles.montoContainer}>
+                        <Text style={[styles.pagoMonto, isPagado && styles.textoInactivo]}>
+                          ${formatCurrency(parseFloat(pago.monto))}
+                        </Text>
+                        {receptor?.aliasCBU && (
+                          <Text style={[styles.aliasCBU, isPagado && styles.textoInactivo]}>
+                            Alias: {receptor.aliasCBU}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[styles.receptor, isPagado && styles.textoInactivo]}>
+                        {receptor?.name || pago.paraNombre}
+                      </Text>
+                    </View>
+                    {isPagado && (
+                      <View style={styles.pagadoIndicator}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                        <Text style={styles.pagadoText}>Pagado</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
+                );
+              })
+            ) : (
+              <Text style={styles.noPagos}>No hay pagos pendientes</Text>
+            )}
+          </View>
+          
+          {/* Espacio adicional al final para que no se corte la última sección */}
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+        
+        {/* Modal para marcar un pago como realizado */}
+        <Modal
+          transparent
+          visible={pagoModalVisible}
+          animationType="fade"
+          onRequestClose={() => setPagoModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Estado del Pago</Text>
+              </View>
+              
+              {selectedPago && (
+                <>
+                  <View style={styles.pagoDetailContainer}>
+                    <Text style={styles.pagoDetailText}>
+                      <Text style={styles.pagador}>{selectedPago.deNombre}</Text>
+                      {' -> '}
+                      <Text style={styles.pagoMonto}>${formatCurrency(parseFloat(selectedPago.monto))}</Text>
+                      {' -> '}
+                      <Text style={styles.receptor}>{selectedPago.paraNombre}</Text>
+                    </Text>
+                  </View>
                   
-                  {selectedPago.estadoPago && (
+                  <View style={styles.modalButtonsRow}>
                     <TouchableOpacity
-                      style={[styles.modalButton, styles.buttonCancel]}
+                      style={[styles.modalButton, selectedPago.estadoPago ? styles.buttonInactive : styles.buttonActive]}
                       onPress={() => {
-                        updatePagoEstado(eventId, selectedPago.id, false);
+                        updatePagoEstado(eventId, selectedPago.id, true);
                         setPagoModalVisible(false);
                       }}
                     >
-                      <Text style={styles.buttonText}>Desmarcar Pago</Text>
+                      <Text style={styles.buttonText}>Marcar como Pagado</Text>
                     </TouchableOpacity>
-                  )}
-                </View>
-              </>
-            )}
-            
-            <TouchableOpacity
-              style={[styles.modalButton, styles.buttonClose]}
-              onPress={() => setPagoModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>Cerrar</Text>
-            </TouchableOpacity>
+                    
+                    {selectedPago.estadoPago && (
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.buttonCancel]}
+                        onPress={() => {
+                          updatePagoEstado(eventId, selectedPago.id, false);
+                          setPagoModalVisible(false);
+                        }}
+                      >
+                        <Text style={styles.buttonText}>Desmarcar Pago</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </>
+              )}
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.buttonClose]}
+                onPress={() => setPagoModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
-      
+        </Modal>
+      </Animated.View>
     </SafeAreaView>
   );
 }
