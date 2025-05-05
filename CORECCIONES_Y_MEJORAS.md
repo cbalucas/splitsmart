@@ -54,7 +54,7 @@
 1. Confeccionar el documento completo referido a las funcionalidades, beneficios, ventajas. Realizar también una pequeña reseña de la definición de dicho proyecto.
 2. Agrega funcionalidades explicitas
 
-## Github
+## GITHUB
 
 Agregar en el Readme, todo lo que es referido a GitHub
 - Creacion de Proyecto
