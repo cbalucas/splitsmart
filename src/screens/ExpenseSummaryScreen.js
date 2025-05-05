@@ -595,7 +595,7 @@ export default function ExpenseSummaryScreen() {
                     
                     {selectedPago.estadoPago ? (
                       <TouchableOpacity
-                        style={[commonStyles.button, commonStyles.cancelBtn]}
+                        style={[commonStyles.button, { backgroundColor: colors.danger }]}
                         onPress={() => {
                           updatePagoEstado(eventId, selectedPago.id, false);
                           setPagoModalVisible(false);
