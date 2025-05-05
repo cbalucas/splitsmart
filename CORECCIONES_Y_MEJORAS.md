@@ -54,8 +54,15 @@
 1. Confeccionar el documento completo referido a las funcionalidades, beneficios, ventajas. Realizar también una pequeña reseña de la definición de dicho proyecto.
 2. Agrega funcionalidades explicitas
 
+## Github
 
-
+Agregar en el Readme, todo lo que es referido a GitHub
+- Creacion de Proyecto
+- Vinculacion del proyecto con Visual Studio Code
+- Cuales son los pasos para actualizar, commitiar, y subir lo realizado a github
+- Pasos para crear rama
+- Pasos para asignarte en una rama
+- Paso para renombrar una rama
 
 
 
