@@ -38,7 +38,8 @@ export default function HomeScreen() {
     getGastosForEvent,
     updateEventTotals,
     calculateTotalGastos,
-    getTotalPersonCount
+    getTotalPersonCount,
+    getParticipantPersonCount
   } = useContext(EventContext);
 
   // Actualizar totales de eventos al cargar la pantalla de forma segura
@@ -266,8 +267,9 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!selectedId) return;
     const t = parseFloat(total) || 0;
-    const cnt = getParticipantsForEvent(selectedId).length || 1;
-    setPer((t / cnt).toFixed(2));
+    // Usar la cantidad total de personas (no solo participantes registrados)
+    const totalPersonas = getTotalPersonCount(selectedId);
+    setPer((totalPersonas > 0 ? t / totalPersonas : 0).toFixed(2));
   }, [total, selectedId]);
 
   // Render de la card de evento
@@ -566,7 +568,7 @@ export default function HomeScreen() {
                   onPress={() => setParticipantsCollapsed(!participantsCollapsed)}
                 >
                   <Text style={commonStyles.sectionTitle}>
-                    Participantes ({getParticipantsForEvent(selectedId).length})
+                    Participantes ({getTotalPersonCount(selectedId)})
                   </Text>
                   <Ionicons
                     name={participantsCollapsed ? 'chevron-down-outline' : 'chevron-up-outline'}
@@ -578,12 +580,19 @@ export default function HomeScreen() {
                   <FlatList
                     data={getParticipantsForEvent(selectedId)}
                     keyExtractor={p => p.id}
-                    renderItem={({ item }) => (
-                      <View style={homeStyles.partRow}>
-                        <Ionicons name="person-outline" size={20} color={colors.textPrimary} />
-                        <Text style={homeStyles.partName}>{item.name}</Text>
-                      </View>
-                    )}
+                    renderItem={({ item }) => {
+                      // Obtener la cantidad de personas que representa este participante
+                      const personCount = getParticipantPersonCount(selectedId, item.id);
+                      return (
+                        <View style={homeStyles.partRow}>
+                          <Ionicons name="person-outline" size={20} color={colors.textPrimary} />
+                          <Text style={homeStyles.partName}>
+                            {item.name}
+                            {personCount > 1 ? ` x ${personCount}` : ''}
+                          </Text>
+                        </View>
+                      );
+                    }}
                     style={{ maxHeight: 150, marginBottom: 16 }}
                   />
                 )}

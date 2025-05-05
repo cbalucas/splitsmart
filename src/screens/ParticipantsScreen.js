@@ -54,6 +54,8 @@ export default function ParticipantsScreen() {
   const [alias, setAlias] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  // Añadimos el estado modalMode
+  const [modalMode, setModalMode] = useState('view'); // 'view' por defecto
 
   const [formExpanded, setFormExpanded] = useState(false);
   const [newName, setNewName] = useState('');
@@ -200,11 +202,13 @@ export default function ParticipantsScreen() {
     }
     
     setIsEditing(false);
+    setModalMode('view'); // Establecer el modo a 'view'
     setModalVisible(true);
   };
 
   const openEdit = () => {
     setIsEditing(true);
+    setModalMode('edit'); // Establecer el modo a 'edit'
   };
 
   const saveModal = () => {
@@ -700,7 +704,7 @@ export default function ParticipantsScreen() {
                       }
                     }}
                     style={participantStyles.counterBtn}
-                    disabled={cantParticipantes <= 1 || (!isEditing && modalMode !== 'view')}
+                    disabled={cantParticipantes <= 1 || !isEditing}
                   >
                     <Ionicons 
                       name="remove" 
@@ -722,7 +726,7 @@ export default function ParticipantsScreen() {
                       }
                     }}
                     style={participantStyles.counterBtn}
-                    disabled={cantParticipantes >= 10 || (!isEditing && modalMode !== 'view')}
+                    disabled={cantParticipantes >= 10 || !isEditing}
                   >
                     <Ionicons 
                       name="add" 

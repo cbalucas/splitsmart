@@ -181,6 +181,12 @@ export function EventProvider({ children }) {
     return { participantCount, totalPersonCount };
   };
 
+  // Función para obtener la cantidad de personas que representa un participante en un evento
+  const getParticipantPersonCount = (eventId, participantId) => {
+    const relation = relations.find(r => r.eventsId === eventId && r.participantsId === participantId);
+    return relation ? (relation.cantParticipantes || 1) : 1;
+  };
+
   // 7) Obtiene participante por ID
   const getParticipantById = (id) => {
     return participants.find(p => p.id === id);
@@ -343,7 +349,8 @@ export function EventProvider({ children }) {
     calculateTotalGastos,
     updateEventTotals,
     getTotalPersonCount,
-    updateParticipantCount
+    updateParticipantCount,
+    getParticipantPersonCount
   };
 
   return (

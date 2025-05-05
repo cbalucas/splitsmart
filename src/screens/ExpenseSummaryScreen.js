@@ -10,7 +10,7 @@ import {
   Share,
   Modal,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { EventContext } from '../context/EventContext';
@@ -38,6 +38,8 @@ export default function ExpenseSummaryScreen() {
     relations,
     updatePagoEstado,
     getPagosEstado,
+    getParticipantPersonCount,
+    getTotalPersonCount
   } = useContext(EventContext);
 
   // Estados para controlar las secciones desplegables
@@ -71,12 +73,16 @@ export default function ExpenseSummaryScreen() {
     totalGastos,
     gastosPorParticipante,
     pagos,
-    promedioPorParticipante
+    promedioPorPersona,
+    totalPersonas
   } = useMemo(() => {
     // Calcular el total de gastos del evento
     const total = gastos.reduce((acc, gasto) => {
       return acc + getMonto(gasto.monto);
     }, 0);
+
+    // Obtener total de personas (sumando cantParticipantes)
+    const totalPersonCount = getTotalPersonCount(eventId);
     
     // Calcular cuánto gastó cada participante
     const gastosMap = {};
@@ -98,18 +104,21 @@ export default function ExpenseSummaryScreen() {
       }
     });
     
-    // Calcular el promedio que debería pagar cada participante
-    const promedioPorParticipante = participants.length > 0 ? total / participants.length : 0;
+    // Calcular el promedio por PERSONA (no por participante)
+    const promedioPorPersona = totalPersonCount > 0 ? total / totalPersonCount : 0;
     
-    // Calcular los saldos (cuánto debe/recibe cada participante)
+    // Calcular los saldos considerando cantParticipantes
     const saldos = [];
     participants.forEach(participant => {
       const gastado = gastosMap[participant.id] || 0;
-      const saldo = gastado - promedioPorParticipante;
+      const personCount = getParticipantPersonCount(eventId, participant.id);
+      // El saldo debe calcularse multiplicando el promedio por la cantidad de personas que representa
+      const saldo = gastado - (promedioPorPersona * personCount);
       saldos.push({
         participantId: participant.id,
         nombre: participant.name,
-        saldo: saldo // positivo = recibe dinero, negativo = debe dinero
+        personCount, // Guardamos cuántas personas representa este participante
+        saldo // positivo = recibe dinero, negativo = debe dinero
       });
     });
     
@@ -179,9 +188,10 @@ export default function ExpenseSummaryScreen() {
       totalGastos: total,
       gastosPorParticipante: gastosMap,
       pagos: calculatedPagos,
-      promedioPorParticipante
+      promedioPorPersona,
+      totalPersonas: totalPersonCount
     };
-  }, [eventId, gastos, participants, relations, getMonto]);
+  }, [eventId, gastos, participants, relations, getMonto, getTotalPersonCount, getParticipantPersonCount]);
 
   // Ordenar pagos: primero los no pagados, luego por deudor, monto y cobrador
   const pagosProcesados = useMemo(() => {
@@ -233,7 +243,7 @@ export default function ExpenseSummaryScreen() {
     contenidoCompartir += `${emoji.calendar} *Fecha:* ${event?.date || ''}\n`;
     contenidoCompartir += `${emoji.money} *Total del evento:* $${formatCurrency(totalGastos)}\n`;
     // 2. Cambiar el icono de Gastos c/u por un icono de billete
-    contenidoCompartir += `${emoji.bill} *Gastos c/u:* $${formatCurrency(promedioPorParticipante)}\n\n`;
+    contenidoCompartir += `${emoji.bill} *Gastos c/u:* $${formatCurrency(promedioPorPersona)}\n\n`;
     
     // Agregar gastos individuales
     contenidoCompartir += "*GASTOS POR PERSONA:*\n";
@@ -276,7 +286,18 @@ export default function ExpenseSummaryScreen() {
     contenidoCompartir += `${emoji.app} Este Resumen fue realizado por *SplitSmart* tu app de División de Gastos y Pago en Eventos.`;
     
     setShareContent(contenidoCompartir);
-  }, [event, participants, totalGastos, gastosPorParticipante, pagos, promedioPorParticipante, pagosEstado, getParticipantById]);
+  }, [event, participants, totalGastos, gastosPorParticipante, pagos, promedioPorPersona, pagosEstado, getParticipantById]);
+
+  // Usar useFocusEffect para evitar parpadeos al navegar
+  useFocusEffect(
+    useCallback(() => {
+      // Esta función se ejecutará cada vez que la pantalla gane el foco
+      return () => {
+        // Esta función se ejecutará cuando la pantalla pierda el foco
+        // No reseteamos estados al salir para evitar el parpadeo en blanco
+      };
+    }, [])
+  );
 
   // Función para compartir el resumen
   const handleShare = useCallback(async () => {
@@ -311,7 +332,7 @@ export default function ExpenseSummaryScreen() {
           </View>
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>Gastos c/u:</Text>
-            <Text style={styles.totalAmount}>${formatCurrency(promedioPorParticipante)}</Text>
+            <Text style={styles.totalAmount}>${formatCurrency(promedioPorPersona)}</Text>
           </View>
         </View>
 
@@ -414,18 +435,23 @@ export default function ExpenseSummaryScreen() {
                 <Text style={styles.noData}>No hay participantes registrados</Text>
               ) : (
                 <View style={styles.participantesGrid}>
-                  {participants.map(participante => (
-                    <View key={participante.id} style={styles.participanteGridItem}>
-                      <Ionicons 
-                        name="person-outline" 
-                        size={16} 
-                        color={colors.textSecondary} 
-                      />
-                      <Text style={styles.participanteNombre}>
-                        {participante.name}
-                      </Text>
-                    </View>
-                  ))}
+                  {participants.map(participante => {
+                    // Obtener la cantidad de personas que representa este participante
+                    const personCount = getParticipantPersonCount(eventId, participante.id);
+                    return (
+                      <View key={participante.id} style={styles.participanteGridItem}>
+                        <Ionicons 
+                          name="person-outline" 
+                          size={16} 
+                          color={colors.textSecondary} 
+                        />
+                        <Text style={styles.participanteNombre}>
+                          {participante.name}
+                          {personCount > 1 ? ` x ${personCount}` : ''}
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </>
