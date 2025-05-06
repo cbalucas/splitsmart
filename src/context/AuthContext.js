@@ -9,9 +9,19 @@ export function AuthProvider({ children }) {
   // Simula login/logout; en el futuro aquí iría tu lógica real
   const login = (userData) => setUser(userData);
   const logout = () => setUser(null);
+  
+  // Función para actualizar datos del perfil
+  const updateProfile = (newData) => {
+    // En una app real, aquí iría la lógica para actualizar los datos en el servidor
+    setUser({
+      ...user,
+      ...newData,
+    });
+    return true; // Devuelve true si la actualización fue exitosa
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

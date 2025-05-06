@@ -79,8 +79,8 @@ const AvatarMenu = ({ logout: propLogout }) => {
     };
 
     const handleNavigateToSettings = () => {
-        // En lugar de navegar, mostrar el modal
-        showComingSoonModal('Configuración');
+        setMenuVisible(false);
+        navigation.navigate('Settings');
     };
 
     const handleLogout = async () => {
@@ -156,7 +156,7 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                     </View>
                                 </TouchableOpacity>
                                 
-                                {/* Submenú de Perfil */}
+                                {/* Submenú de Perfil (sin la opción de Editar perfil) */}
                                 {expandedSection === 'profile' && (
                                     <View style={styles.submenu}>
                                         <View style={styles.submenuItem}>
@@ -186,59 +186,20 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                                 {userData?.isGuest ? '' : (userData?.celular || 'No disponible')}
                                             </Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={[styles.submenuItem, {marginTop: 8}]}
-                                            onPress={() => showComingSoonModal('Editar perfil')}
-                                        >
-                                            <Ionicons name="create-outline" size={16} color={colors.primary} />
-                                            <Text style={{...styles.submenuText, color: colors.primary, fontWeight: 'bold'}}>
-                                                Editar perfil
-                                            </Text>
-                                        </TouchableOpacity>
                                     </View>
                                 )}
                             </View>
                             
-                            {/* Configuración */}
-                            <View>
-                                <TouchableOpacity 
-                                    style={styles.menuItem} 
-                                    onPress={() => toggleSection('settings')}
-                                >
-                                    <View style={styles.menuItemContent}>
-                                        <Ionicons name="settings-outline" size={20} color={colors.primary} />
-                                        <Text style={styles.menuItemText}>Configuración</Text>
-                                        <Ionicons 
-                                            name={expandedSection === 'settings' ? "chevron-up" : "chevron-down"} 
-                                            size={16} 
-                                            color={colors.textSecondary} 
-                                            style={{marginLeft: 'auto'}}
-                                        />
-                                    </View>
-                                </TouchableOpacity>
-                                
-                                {/* Submenú de Configuración */}
-                                {expandedSection === 'settings' && (
-                                    <View style={styles.submenu}>
-                                        {[
-                                            { icon: "person-outline", label: "Perfil", feature: "Configuración de perfil" },
-                                            { icon: "color-palette", label: "Tema", feature: "Configuración de tema" },
-                                            { icon: "language", label: "Idioma", feature: "Configuración de idioma" },
-                                            { icon: "notifications", label: "Notificaciones", feature: "Configuración de notificaciones" },
-                                            { icon: "alert-circle-outline", label: "Confirmación de Acciones", feature: "Configuración de confirmación de acciones" }
-                                        ].map((item, index) => (
-                                            <TouchableOpacity 
-                                                key={index} 
-                                                style={styles.submenuItem}
-                                                onPress={() => showComingSoonModal(item.feature)}
-                                            >
-                                                <Ionicons name={item.icon} size={16} color={colors.secondary} />
-                                                <Text style={styles.submenuText}>{item.label}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
+                            {/* Configuración (sin submenú) */}
+                            <TouchableOpacity 
+                                style={styles.menuItem} 
+                                onPress={handleNavigateToSettings}
+                            >
+                                <View style={styles.menuItemContent}>
+                                    <Ionicons name="settings-outline" size={20} color={colors.primary} />
+                                    <Text style={styles.menuItemText}>Configuración</Text>
+                                </View>
+                            </TouchableOpacity>
                             
                             {/* Salir (sin submenú) */}
                             <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
