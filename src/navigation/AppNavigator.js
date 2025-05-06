@@ -10,6 +10,7 @@ import AppTabs from './AppTabs';
 import CreateExpenseScreen from '../screens/CreateExpenseScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import ExpenseSummaryScreen from '../screens/ExpenseSummaryScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 import { AuthContext } from '../context/AuthContext';
 import colors from '../styles/colors';
@@ -97,6 +98,22 @@ export default function AppNavigator() {
               options={() => ({
                 headerShown: true,
                 headerTitle: 'Resumen',
+                headerStyle: { 
+                  backgroundColor: colors.card,
+                  height: 60,
+                },
+                headerTintColor: colors.textPrimary,
+                headerStatusBarHeight: 40,
+              })}
+            />
+            
+            {/* Pantalla de configuración */}
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={() => ({
+                headerShown: true,
+                headerTitle: 'Configuración',
                 headerStyle: { 
                   backgroundColor: colors.card,
                   height: 60,

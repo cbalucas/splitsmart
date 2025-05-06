@@ -32,7 +32,7 @@ Estas cosas las comento Droopy ver y ampliar para completar como mejoras
 2. Soporte multiidioma (Spa/Eng/Por/Fra/Ita)
 3. Funcionalidad de cambio de contraseña
 4. Edición de perfil (nombre, imagen, etc.)
-5. Al lado de la foto en el profile, deberia aparecer el nombre de usuario
+<!-- 5. Al lado de la foto en el profile, deberia aparecer el nombre de usuario -->
 
 ## Resumen
 
