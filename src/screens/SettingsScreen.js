@@ -31,6 +31,12 @@ const SettingsScreen = () => {
   const [errorNotifications, setErrorNotifications] = useState(true);
   const [paymentNotifications, setPaymentNotifications] = useState(true);
 
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState('light'); // 'light' o 'dark'
+
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('es'); // 'es', 'en', etc.
+
   const resetForm = () => {
     setCurrentPassword('');
     setNewPassword('');
@@ -83,6 +89,24 @@ const SettingsScreen = () => {
     }
   };
 
+  const handleOpenThemeModal = () => {
+    setThemeModalVisible(true);
+  };
+
+  const handleSaveTheme = () => {
+    Alert.alert('Éxito', 'Tema actualizado correctamente');
+    setThemeModalVisible(false);
+  };
+
+  const handleOpenLanguageModal = () => {
+    setLanguageModalVisible(true);
+  };
+
+  const handleSaveLanguage = () => {
+    Alert.alert('Éxito', 'Idioma actualizado correctamente');
+    setLanguageModalVisible(false);
+  };
+
   const settingsOptions = [
     { 
       title: 'Perfil', 
@@ -92,12 +116,12 @@ const SettingsScreen = () => {
     { 
       title: 'Tema', 
       icon: 'contrast-outline',
-      onPress: () => console.log('Tema presionado') 
+      onPress: handleOpenThemeModal 
     },
     { 
       title: 'Idioma', 
       icon: 'language-outline',
-      onPress: () => console.log('Idioma presionado') 
+      onPress: handleOpenLanguageModal
     },
     { 
       title: 'Notificaciones', 
@@ -355,6 +379,159 @@ const SettingsScreen = () => {
             </View>
           </View>
         </Modal>
+
+        {/* Modal para cambio de tema */}
+        <Modal
+          visible={themeModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setThemeModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Seleccionar tema</Text>
+                <TouchableOpacity 
+                  onPress={() => setThemeModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.themeOptionsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    selectedTheme === 'light' && styles.selectedThemeOption
+                  ]}
+                  onPress={() => setSelectedTheme('light')}
+                >
+                  <View style={styles.themePreview}>
+                    <View style={styles.themePreviewLight} />
+                  </View>
+                  <View style={styles.themeTextContainer}>
+                    <Text style={styles.notificationTitle}>Tema claro</Text>
+                    <Text style={styles.notificationDescription}>
+                      Fondo blanco con texto oscuro
+                    </Text>
+                  </View>
+                  {selectedTheme === 'light' && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    selectedTheme === 'dark' && styles.selectedThemeOption
+                  ]}
+                  onPress={() => setSelectedTheme('dark')}
+                >
+                  <View style={styles.themePreview}>
+                    <View style={styles.themePreviewDark} />
+                  </View>
+                  <View style={styles.themeTextContainer}>
+                    <Text style={styles.notificationTitle}>Tema oscuro</Text>
+                    <Text style={styles.notificationDescription}>
+                      Fondo oscuro con texto claro
+                    </Text>
+                  </View>
+                  {selectedTheme === 'dark' && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.noteContainer}>
+                  <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                  <Text style={styles.noteText}>
+                    El tema se aplicará a toda la aplicación y se guardará para futuros inicios.
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setThemeModalVisible(false)}
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.button, styles.saveButton]}
+                  onPress={handleSaveTheme}
+                >
+                  <Text style={styles.buttonText}>Guardar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal para cambio de idioma */}
+        <Modal
+          visible={languageModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setLanguageModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Seleccionar idioma</Text>
+                <TouchableOpacity 
+                  onPress={() => setLanguageModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView style={styles.languageOptionsContainer}>
+                {['es', 'en', 'fr', 'de', 'it', 'pt'].map((language, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.languageOption,
+                      selectedLanguage === language && styles.selectedLanguageOption
+                    ]}
+                    onPress={() => setSelectedLanguage(language)}
+                  >
+                    <Text style={styles.languageFlag}>{language === 'es' ? '🇪🇸' : language === 'en' ? '🇺🇸' : language === 'fr' ? '🇫🇷' : language === 'de' ? '🇩🇪' : language === 'it' ? '🇮🇹' : '🇵🇹'}</Text>
+                    <Text style={styles.languageName}>{language === 'es' ? 'Español' : language === 'en' ? 'English' : language === 'fr' ? 'Français' : language === 'de' ? 'Deutsch' : language === 'it' ? 'Italiano' : 'Português'}</Text>
+                    {selectedLanguage === language && (
+                      <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              <View style={styles.noteContainer}>
+                <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.noteText}>
+                  El cambio de idioma se aplicará inmediatamente a toda la aplicación.
+                </Text>
+              </View>
+              
+              <View style={styles.buttonRow}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setLanguageModalVisible(false)}
+                >
+                  <Text style={styles.buttonText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.button, styles.saveButton]}
+                  onPress={handleSaveLanguage}
+                >
+                  <Text style={styles.buttonText}>Guardar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -535,6 +712,87 @@ const styles = StyleSheet.create({
   notificationDescription: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  themeOptionsContainer: {
+    marginBottom: 20,
+  },
+  themeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  selectedThemeOption: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
+  },
+  themePreview: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  themePreviewLight: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+  },
+  themePreviewDark: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#121212',
+    borderRadius: 20,
+  },
+  themeTextContainer: {
+    flex: 1,
+  },
+  noteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    padding: 12,
+    borderRadius: 8,
+  },
+  noteText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginLeft: 5,
+    flex: 1,
+  },
+  languageOptionsContainer: {
+    maxHeight: 300,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  selectedLanguageOption: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
+  },
+  languageFlag: {
+    fontSize: 24,
+    marginRight: 15,
+  },
+  languageName: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
   },
 });
 
