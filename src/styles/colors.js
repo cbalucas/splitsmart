@@ -4,6 +4,7 @@ export const colors = {
     secondary: '#4285F4',    // Azul para elementos secundarios e información
     danger: '#FF6B6B',       // Rojo para acciones destructivas y alertas
     disabled: '#696969',     // Gris para elementos deshabilitados
+    white: '#FFFFFF',      // Blanco para texto y elementos destacados
     
     // Fondo y contenedores
     background: '#0A0E1A',   // Fondo principal oscuro

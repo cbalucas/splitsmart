@@ -8,7 +8,9 @@ import {
   Modal, 
   TextInput,
   Alert, 
-  Switch
+  Switch,
+  Image,
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +38,8 @@ const SettingsScreen = () => {
 
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('es'); // 'es', 'en', etc.
+
+  const [aboutModalVisible, setAboutModalVisible] = useState(false);
 
   const resetForm = () => {
     setCurrentPassword('');
@@ -107,6 +111,10 @@ const SettingsScreen = () => {
     setLanguageModalVisible(false);
   };
 
+  const handleOpenAboutModal = () => {
+    setAboutModalVisible(true);
+  };
+
   const settingsOptions = [
     { 
       title: 'Perfil', 
@@ -131,7 +139,7 @@ const SettingsScreen = () => {
     { 
       title: 'Acerca de', 
       icon: 'information-circle-outline',
-      onPress: () => console.log('Acerca de presionado') 
+      onPress: handleOpenAboutModal
     },
   ];
 
@@ -532,6 +540,126 @@ const SettingsScreen = () => {
             </View>
           </View>
         </Modal>
+
+        {/* Modal Acerca de */}
+        <Modal
+          visible={aboutModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setAboutModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Acerca de SplitSmart</Text>
+                <TouchableOpacity 
+                  onPress={() => setAboutModalVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView>
+                <View style={styles.aboutLogoContainer}>
+                  <Image
+                    source={require('../assets/splitsmart-logo-transparent.png')}
+                    style={styles.aboutLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+                
+                <View style={styles.aboutSection}>
+                  <Text style={styles.aboutVersionText}>Versión 1.0.0</Text>
+                  <Text style={styles.aboutDescription}>
+                    SplitSmart es una aplicación que te permite dividir gastos entre amigos, 
+                    familiares o compañeros de manera fácil y rápida. Ideal para viajes, 
+                    eventos o cualquier situación donde se compartan gastos.
+                  </Text>
+                </View>
+
+                <View style={styles.aboutSection}>
+                  <Text style={styles.aboutSectionTitle}>Características</Text>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureIcon} />
+                    <Text style={styles.featureText}>Creación de eventos para organizar gastos</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureIcon} />
+                    <Text style={styles.featureText}>División equitativa o personalizada de gastos</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureIcon} />
+                    <Text style={styles.featureText}>Resumen de balances y deudas</Text>
+                  </View>
+                  <View style={styles.featureItem}>
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} style={styles.featureIcon} />
+                    <Text style={styles.featureText}>Historial de eventos y gastos</Text>
+                  </View>
+                </View>
+
+                <View style={styles.aboutSection}>
+                  <Text style={styles.aboutSectionTitle}>Desarrolladores</Text>
+                  <Text style={styles.aboutText}>
+                    Aplicación desarrollada por el equipo de SplitSmart.
+                  </Text>
+                </View>
+
+                <View style={styles.aboutSection}>
+                  <Text style={styles.aboutSectionTitle}>Contáctanos</Text>
+                  <TouchableOpacity 
+                    style={styles.contactItem}
+                    onPress={() => Linking.openURL('mailto:support@splitsmart.com')}
+                  >
+                    <Ionicons name="mail-outline" size={20} color={colors.primary} style={styles.contactIcon} />
+                    <Text style={styles.contactText}>support@splitsmart.com</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.contactItem}
+                    onPress={() => Linking.openURL('https://www.splitsmart.com')}
+                  >
+                    <Ionicons name="globe-outline" size={20} color={colors.primary} style={styles.contactIcon} />
+                    <Text style={styles.contactText}>www.splitsmart.com</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.aboutSection}>
+                  <Text style={styles.aboutSectionTitle}>Términos y Políticas</Text>
+                  <TouchableOpacity 
+                    style={styles.legalItem}
+                    onPress={() => console.log('Términos de servicio')}
+                  >
+                    <Text style={styles.legalText}>Términos de servicio</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.legalItem}
+                    onPress={() => console.log('Política de privacidad')}
+                  >
+                    <Text style={styles.legalText}>Política de privacidad</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.legalItem}
+                    onPress={() => console.log('Licencias')}
+                  >
+                    <Text style={styles.legalText}>Licencias de terceros</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+              
+              <View style={[styles.buttonRow, {justifyContent: 'center'}]}>
+                <TouchableOpacity 
+                  style={[styles.button, styles.saveButton, {flex: 0.5}]}
+                  onPress={() => setAboutModalVisible(false)}
+                >
+                  <Text style={[styles.buttonText, {color: colors.white}]}>Cerrar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -793,6 +921,71 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: colors.textPrimary,
+  },
+  aboutLogoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  aboutLogo: {
+    width: 100,
+    height: 100,
+  },
+  aboutSection: {
+    marginBottom: 20,
+  },
+  aboutVersionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 10,
+  },
+  aboutDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  aboutSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 10,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  featureIcon: {
+    marginRight: 10,
+  },
+  featureText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  aboutText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  contactIcon: {
+    marginRight: 10,
+  },
+  contactText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  legalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  legalText: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
 });
 

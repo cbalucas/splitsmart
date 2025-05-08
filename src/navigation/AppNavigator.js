@@ -11,27 +11,109 @@ import CreateExpenseScreen from '../screens/CreateExpenseScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import ExpenseSummaryScreen from '../screens/ExpenseSummaryScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SplashScreen from '../screens/SplashScreen';
 
 import { AuthContext } from '../context/AuthContext';
 import colors from '../styles/colors';
 
 const Stack = createStackNavigator();
+const MainStack = createStackNavigator();
 
-export default function AppNavigator() {
+// Componente que determina si mostrar AuthStack o la app principal
+function AuthenticatedStack() {
   const { user } = useContext(AuthContext);
 
+  return (
+    <>
+      {user ? (
+        <Stack.Navigator screenOptions={screenOptions}>
+          {/* Tus tabs principales */}
+          <Stack.Screen name="Tabs" component={AppTabs} />
+
+          {/* La pantalla de gastos */}
+          <Stack.Screen
+            name="CreateExpense"
+            component={CreateExpenseScreen}
+            options={() => ({
+              headerShown: true,
+              headerTitle: 'Gastos del Evento',
+              headerStyle: { 
+                backgroundColor: colors.card,
+                height: 60,
+              },
+              headerTintColor: colors.textPrimary,
+              headerStatusBarHeight: 40,
+            })}
+          />
+          
+          {/* Mantener la pantalla de eventos como ruta para casos específicos */}
+          <Stack.Screen
+            name="CreateEvent"
+            component={CreateEventScreen}
+            options={() => ({
+              headerShown: true,
+              headerTitle: 'Nuevo Evento',
+              headerStyle: { 
+                backgroundColor: colors.card,
+                height: 60,
+              },
+              headerTintColor: colors.textPrimary,
+              headerStatusBarHeight: 40,
+            })}
+          />
+          
+          {/* Pantalla de resumen de gastos y pagos */}
+          <Stack.Screen
+            name="ExpenseSummary"
+            component={ExpenseSummaryScreen}
+            options={() => ({
+              headerShown: true,
+              headerTitle: 'Resumen',
+              headerStyle: { 
+                backgroundColor: colors.card,
+                height: 60,
+              },
+              headerTintColor: colors.textPrimary,
+              headerStatusBarHeight: 40,
+            })}
+          />
+          
+          {/* Pantalla de configuración */}
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={() => ({
+              headerShown: true,
+              headerTitle: 'Configuración',
+              headerStyle: { 
+                backgroundColor: colors.card,
+                height: 60,
+              },
+              headerTintColor: colors.textPrimary,
+              headerStatusBarHeight: 40,
+            })}
+          />
+        </Stack.Navigator>
+      ) : (
+        <AuthStack />
+      )}
+    </>
+  );
+}
+
+export default function AppNavigator() {
   // Configuración común para evitar parpadeos durante las transiciones
   const screenOptions = {
     headerShown: false,
     safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
-    cardStyle: { backgroundColor: colors.card },  // Fondo consistente para evitar parpadeos
-    cardOverlayEnabled: true,                     // Mantiene la pantalla anterior visible durante la transición
-    animationEnabled: true,                       // Asegura que las animaciones estén habilitadas
-    detachPreviousScreen: false,                  // Mantiene la pantalla anterior montada durante la transición  
-    presentation: 'card',                         // Modo de presentación más fluido
+    cardStyle: { backgroundColor: colors.card },
+    cardOverlayEnabled: true,
+    animationEnabled: true,
+    detachPreviousScreen: false,
+    presentation: 'card',
     cardStyleInterpolator: ({ current: { progress } }) => ({
       cardStyle: {
-        opacity: progress,                        // Transición de opacidad suave
+        opacity: progress,
       }
     }),
   };
@@ -41,7 +123,6 @@ export default function AppNavigator() {
     ...DefaultTheme,
     colors: {
       ...DefaultTheme.colors,
-      // Sobrescribir colores específicos del tema
       primary: colors.primary,
       background: colors.background,
       card: colors.card,
@@ -54,78 +135,10 @@ export default function AppNavigator() {
   return (
     <SafeAreaProvider>
       <NavigationContainer theme={customTheme}>
-        {user ? (
-          <Stack.Navigator screenOptions={screenOptions}>
-            {/* Tus tabs principales */}
-            <Stack.Screen name="Tabs" component={AppTabs} />
-
-            {/* La pantalla de gastos */}
-            <Stack.Screen
-              name="CreateExpense"
-              component={CreateExpenseScreen}
-              options={() => ({
-                headerShown: true,
-                headerTitle: 'Gastos del Evento',
-                headerStyle: { 
-                  backgroundColor: colors.card,
-                  height: 60, // Altura fija simplificada
-                },
-                headerTintColor: colors.textPrimary,
-                headerStatusBarHeight: 40, // Espacio adicional para la barra de estado
-              })}
-            />
-            
-            {/* Mantener la pantalla de eventos como ruta para casos específicos */}
-            <Stack.Screen
-              name="CreateEvent"
-              component={CreateEventScreen}
-              options={() => ({
-                headerShown: true,
-                headerTitle: 'Nuevo Evento',
-                headerStyle: { 
-                  backgroundColor: colors.card,
-                  height: 60,
-                },
-                headerTintColor: colors.textPrimary,
-                headerStatusBarHeight: 40,
-              })}
-            />
-            
-            {/* Pantalla de resumen de gastos y pagos */}
-            <Stack.Screen
-              name="ExpenseSummary"
-              component={ExpenseSummaryScreen}
-              options={() => ({
-                headerShown: true,
-                headerTitle: 'Resumen',
-                headerStyle: { 
-                  backgroundColor: colors.card,
-                  height: 60,
-                },
-                headerTintColor: colors.textPrimary,
-                headerStatusBarHeight: 40,
-              })}
-            />
-            
-            {/* Pantalla de configuración */}
-            <Stack.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={() => ({
-                headerShown: true,
-                headerTitle: 'Configuración',
-                headerStyle: { 
-                  backgroundColor: colors.card,
-                  height: 60,
-                },
-                headerTintColor: colors.textPrimary,
-                headerStatusBarHeight: 40,
-              })}
-            />
-          </Stack.Navigator>
-        ) : (
-          <AuthStack />
-        )}
+        <MainStack.Navigator screenOptions={{headerShown: false}}>
+          <MainStack.Screen name="Splash" component={SplashScreen} />
+          <MainStack.Screen name="Main" component={AuthenticatedStack} />
+        </MainStack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
