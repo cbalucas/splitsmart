@@ -37,10 +37,9 @@ const SplashScreen = () => {
           easing: Easing.out(Easing.cubic)
         }
       )
-    ]).start();
-
-    // Timer para navegar a la siguiente pantalla después de 10 segundos
+    ]).start();    // Timer para navegar a la siguiente pantalla después de 3 segundos
     const timer = setTimeout(() => {
+      console.log("Navegando desde SplashScreen a Main");
       // Animación de salida
       Animated.parallel([
         Animated.timing(
@@ -60,12 +59,15 @@ const SplashScreen = () => {
             useNativeDriver: true,
             easing: Easing.in(Easing.cubic)
           }
-        )
-      ]).start(() => {
-        // Navegar a la pantalla principal después de la animación
-        navigation.replace('Main');
+        )      ]).start(() => {
+        // Navegamos primero a 'Main' para mostrar el sistema de autenticación
+        console.log("Animación de salida completada, navegando a Main...");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
       });
-    }, 2500); // 2.5 segundos
+    }, 3000); // 3 segundos
 
     // Limpiar timer al desmontar el componente
     return () => clearTimeout(timer);

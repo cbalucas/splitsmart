@@ -15,6 +15,9 @@ export function EventProvider({ children }) {
   const [relations, setRelations] = useState(sampleEvents_Participants);
   const [gastos, setGastos] = useState(sampleExpense);
   const [pagosPorEvento, setPagosPorEvento] = useState({});
+  
+  // Log de inicialización para verificar los datos cargados
+  console.log("EventContext inicializado con", events.length, "eventos");
 
   // 1) Añade un nuevo evento y sus relaciones
   const addEvent = (e) => {

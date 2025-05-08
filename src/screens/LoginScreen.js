@@ -19,24 +19,36 @@ export default function LoginScreen() {
   const { login } = useContext(AuthContext);
   const [identifier, setIdentifier] = useState(''); // Puede ser email o nombre de usuario
   const [password, setPassword] = useState('');
-
   const handleLogin = () => {
+    console.log("Intentando iniciar sesión con:", identifier);
+    
     // Buscar el usuario por email o nombre de usuario
     const user = sampleUsers.find(
       u => (u.email === identifier || u.usuario === identifier) && u.contraseña === password
     );
 
     if (user) {
+      console.log("Usuario encontrado, iniciando sesión");
       // Pasar toda la información del usuario al contexto de autenticación
-      login({
-        id: user.id,
-        nombre: user.nombre,
-        userName: user.usuario,
-        email: user.email,
-        celular: user.celular,
-        imagenProfile: user.imagenProfile
-      });
+      try {
+        login({
+          id: user.id,
+          nombre: user.nombre,
+          userName: user.usuario,
+          email: user.email,
+          celular: user.celular,
+          imagenProfile: user.imagenProfile
+        });
+        console.log("Login exitoso");
+      } catch (error) {
+        console.error("Error durante el login:", error);
+        Alert.alert(
+          'Error',
+          'Ocurrió un error al iniciar sesión. Por favor, intenta nuevamente.'
+        );
+      }
     } else {
+      console.log("Credenciales inválidas");
       Alert.alert(
         'Credenciales inválidas',
         'El usuario o la contraseña no son correctos'

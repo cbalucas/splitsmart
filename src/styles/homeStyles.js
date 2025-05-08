@@ -149,7 +149,34 @@ export default StyleSheet.create({
     padding: 4
   },
   
-  // Footer del modal
+  // Estado vacío
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  emptyText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 20
+  },
+  createFirstButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 16
+  },
+  createFirstButtonText: {
+    color: colors.textButton,
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  
+  // Modal de participantes
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

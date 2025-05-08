@@ -22,13 +22,30 @@ const MainStack = createStackNavigator();
 // Componente que determina si mostrar AuthStack o la app principal
 function AuthenticatedStack() {
   const { user } = useContext(AuthContext);
+  
+  // Aquí agregamos un console log para debug
+  console.log("Estado de autenticación:", user ? "Autenticado" : "No autenticado");
+
+  const authScreenOptions = {
+    headerShown: false,
+    safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
+    cardStyle: { backgroundColor: colors.card },
+    cardOverlayEnabled: true,
+    animationEnabled: true,
+  };
 
   return (
     <>
       {user ? (
-        <Stack.Navigator screenOptions={screenOptions}>
+        <Stack.Navigator screenOptions={authScreenOptions} initialRouteName="Tabs">
           {/* Tus tabs principales */}
-          <Stack.Screen name="Tabs" component={AppTabs} />
+          <Stack.Screen 
+            name="Tabs" 
+            component={AppTabs}
+            options={{ 
+              headerShown: false,
+            }}
+          />
 
           {/* La pantalla de gastos */}
           <Stack.Screen

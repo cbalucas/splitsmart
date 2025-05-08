@@ -12,7 +12,7 @@ Estas cosas las comento Droopy ver y ampliar para completar como mejoras
 #2. Colores Explicacion 
 #3. Mensajes independientes acorde a la persona
 #4. Armas un modal o pagina, donde este la explicacion de todos los iconos y sus colores
-#5. POder configurar el nro maxi del campo cantParticipantes
+#5. POder configurar el nro maxi del campo cantParticipantes 
 
 
 ## Home

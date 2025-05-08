@@ -46,26 +46,32 @@ export default function HomeScreen() {
   const [initialUpdateDone, setInitialUpdateDone] = useState(false);
   
   useEffect(() => {
+    console.log("HomeScreen cargando, eventos disponibles:", events.length);
+    
     // Solo ejecutar una vez al inicio para evitar bucles infinitos
     if (!initialUpdateDone) {
-      // Calculamos los totales solo para usarlos en el componente, sin actualizar el estado global
-      events.forEach(event => {
-        // No llamamos a updateEventTotals porque actualiza el estado y causa el bucle
-        const totalGastos = calculateTotalGastos(event.id);
-        const participantesCount = getParticipantsForEvent(event.id).length || 1;
-        const costoPorPersona = participantesCount > 0 ? totalGastos / participantesCount : 0;
-        
-        // Solo actualizamos si los valores son diferentes para evitar renders innecesarios
-        if (event.total !== totalGastos || event.per !== costoPorPersona) {
-          updateEvent(event.id, {
-            total: totalGastos,
-            per: parseFloat(costoPorPersona.toFixed(2)),
-          });
-        }
-      });
+      try {
+        // Calculamos los totales solo para usarlos en el componente, sin actualizar el estado global
+        events.forEach(event => {
+          // No llamamos a updateEventTotals porque actualiza el estado y causa el bucle
+          const totalGastos = calculateTotalGastos(event.id);
+          const participantesCount = getParticipantsForEvent(event.id).length || 1;
+          const costoPorPersona = participantesCount > 0 ? totalGastos / participantesCount : 0;
+          
+          // Solo actualizamos si los valores son diferentes para evitar renders innecesarios
+          if (event.total !== totalGastos || event.per !== costoPorPersona) {
+            updateEvent(event.id, {
+              total: totalGastos,
+              per: parseFloat(costoPorPersona.toFixed(2)),
+            });
+          }
+        });
+      } catch (error) {
+        console.error("Error al actualizar totales de eventos:", error);
+      }
       setInitialUpdateDone(true);
     }
-  }, []);
+  }, [events]);
 
   // Reabrir modal si vienen de gastos
   const { openEventId, updatedEventId, updateTimestamp } = route.params || {};
@@ -442,12 +448,27 @@ export default function HomeScreen() {
       </View>
 
       {/* Lista de eventos */}
-      <FlatList
-        data={filtered}
-        keyExtractor={i => i.id}
-        renderItem={renderEvent}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-      />
+      {filtered.length > 0 ? (
+        <FlatList
+          data={filtered}
+          keyExtractor={i => i.id}
+          renderItem={renderEvent}
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        />
+      ) : (
+        <View style={homeStyles.emptyContainer}>
+          <Ionicons name="calendar-outline" size={60} color={colors.textSecondary} />
+          <Text style={homeStyles.emptyText}>
+            {search ? "No se encontraron eventos que coincidan con tu búsqueda" : "No hay eventos disponibles"}
+          </Text>
+          <TouchableOpacity 
+            style={homeStyles.createFirstButton}
+            onPress={openNewEventModal}
+          >
+            <Text style={homeStyles.createFirstButtonText}>Crear primer evento</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Botón flotante para nuevo evento */}
       <TouchableOpacity style={commonStyles.floatingButton} onPress={openNewEventModal}>

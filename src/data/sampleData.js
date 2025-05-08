@@ -1,9 +1,9 @@
 export const sampleEvents = [
     
-    { id: '1', name: 'Cumpleaños',    date: '2025-05-10',  estadoEvento: true,  whatsappEnvio: true,  icon: require('../assets/event-icon.png'), address: 'Calle Falsa 123', map: 'https://www.google.com.ar' },
-    { id: '2', name: 'Asado con amigos',   date: '2025-04-29', estadoEvento: true,  whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Av. Siempre Viva 742', map: 'https://www.google.com.ar' },
-    { id: '3', name: 'Vieja Mendoza',      date: '2025-04-10', estadoEvento: false, whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Calle X 853', map: 'https://www.google.com.ar' },
-    { id: '4', name: '1 de Mayo',      date: '2025-05-01', estadoEvento: true, whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Fontana de Sur', map: 'https://www.google.com.ar' },
+    { id: '1', name: 'Cumpleaños',    date: '2025-05-10',  estadoEvento: true,  whatsappEnvio: true,  icon: require('../assets/event-icon.png'), address: 'Calle Falsa 123', map: 'https://www.google.com.ar', total: 128355, per: 25671 },
+    { id: '2', name: 'Asado con amigos',   date: '2025-04-29', estadoEvento: true,  whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Av. Siempre Viva 742', map: 'https://www.google.com.ar', total: 157105, per: 31421 },
+    { id: '3', name: 'Vieja Mendoza',      date: '2025-04-10', estadoEvento: false, whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Calle X 853', map: 'https://www.google.com.ar', total: 67900, per: 16975 },
+    { id: '4', name: '1 de Mayo',      date: '2025-05-01', estadoEvento: true, whatsappEnvio: false, icon: require('../assets/event-icon.png'), address: 'Fontana de Sur', map: 'https://www.google.com.ar', total: 260000, per: 19230.77 },
   ];
 
   export const sampleParticipants = [
