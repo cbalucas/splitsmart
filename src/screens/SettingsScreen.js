@@ -71,12 +71,18 @@ const SettingsScreen = () => {
       setSelectedLanguage(userConfig.idioma ?? 'es');
     }
   }, [userConfig]);
-
   // Verificar si el usuario es invitado y mostrar advertencia
   useEffect(() => {
+    // Mostrar advertencia solo después de que el componente esté montado
+    let timeout;
     if (user?.isGuest) {
-      setGuestWarningVisible(true);
+      timeout = setTimeout(() => {
+        setGuestWarningVisible(true);
+      }, 100); // Pequeño retraso para evitar problemas de renderizado
     }
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
   }, [user]);
 
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
@@ -748,50 +754,51 @@ const SettingsScreen = () => {
           </View>
         </Modal>
       </ScrollView>
-      
-      {/* Modal de advertencia para usuario invitado */}
-      <Modal
-        transparent={true}
-        visible={guestWarningVisible}
-        animationType="fade"
-        onRequestClose={() => {
-          navigation.goBack();
-          setGuestWarningVisible(false);
-        }}
-      >
-        <Pressable 
-          style={modalStyles.guestWarningModalOverlay} 
-          onPress={() => {
-            navigation.goBack();
+        {/* Modal de advertencia para usuario invitado */}
+      {guestWarningVisible && (
+        <Modal
+          transparent={true}
+          visible={true}
+          animationType="fade"
+          onRequestClose={() => {
             setGuestWarningVisible(false);
+            navigation.goBack();
           }}
         >
-          <View 
-            style={modalStyles.guestWarningModalContent}
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >            <Ionicons 
-              name="lock-closed-outline" 
-              size={60} 
-              color={colors.primary} 
-              style={modalStyles.guestWarningIcon}
-            />
-            <Text style={modalStyles.guestWarningTitle}>Acceso restringido</Text>
-            <Text style={modalStyles.guestWarningMessage}>
-              No se puede acceder por haberse logeado como invitado.
-            </Text>
-            <TouchableOpacity 
-              style={modalStyles.guestWarningButton}
-              onPress={() => {
-                navigation.goBack();
-                setGuestWarningVisible(false);
-              }}
+          <Pressable 
+            style={modalStyles.guestWarningModalOverlay} 
+            onPress={() => {
+              setGuestWarningVisible(false);
+              setTimeout(() => navigation.goBack(), 100);
+            }}
+          >
+            <View 
+              style={modalStyles.guestWarningModalContent}
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
             >
-              <Text style={modalStyles.guestWarningButtonText}>Entendido</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
+              <Ionicons 
+                name="lock-closed-outline" 
+                size={60} 
+                color={colors.primary} 
+                style={modalStyles.guestWarningIcon}
+              />
+              <Text style={modalStyles.guestWarningTitle}>Acceso restringido</Text>
+              <Text style={modalStyles.guestWarningMessage}>
+                No se puede acceder por haberse logeado como invitado.
+              </Text>              <TouchableOpacity 
+                style={modalStyles.guestWarningButton}
+                onPress={() => {
+                  navigation.goBack();
+                  setGuestWarningVisible(false);
+                }}
+              >
+                <Text style={modalStyles.guestWarningButtonText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };

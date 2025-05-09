@@ -8,7 +8,8 @@ import styles from '../styles/avatarMenuStyles';
 import { AuthContext } from '../context/AuthContext';
 import { sampleUsers } from '../data/sampleData';
 
-const AvatarMenu = ({ logout: propLogout }) => {    const [menuVisible, setMenuVisible] = useState(false);
+const AvatarMenu = ({ logout: propLogout }) => {
+    const [menuVisible, setMenuVisible] = useState(false);
     const [expandedSection, setExpandedSection] = useState(null);
     const [userData, setUserData] = useState(null);
     const [comingSoonModal, setComingSoonModal] = useState(false);
@@ -76,7 +77,9 @@ const AvatarMenu = ({ logout: propLogout }) => {    const [menuVisible, setMenuV
         } else {
             setExpandedSection(section); // Abrir la nueva sección
         }
-    };    const handleNavigateToSettings = () => {
+    };
+
+    const handleNavigateToSettings = () => {
         setMenuVisible(false);
         // Si es un usuario invitado, mostrar la advertencia en lugar de navegar
         if (user?.isGuest) {
@@ -90,7 +93,9 @@ const AvatarMenu = ({ logout: propLogout }) => {    const [menuVisible, setMenuV
     const handleLogout = async () => {
         setMenuVisible(false);
         await logout();
-    };    // Función para mostrar el modal "Próximamente"
+    };
+
+    // Función para mostrar el modal "Próximamente"
     const showComingSoonModal = (feature) => {
         setComingSoonFeature(feature);
         setMenuVisible(false); // Cerrar el menú
@@ -120,194 +125,207 @@ const AvatarMenu = ({ logout: propLogout }) => {    const [menuVisible, setMenuV
                 />
             </TouchableOpacity>
 
-            <Modal
-                transparent={true}
-                visible={menuVisible}
-                animationType="fade"
-                onRequestClose={() => setMenuVisible(false)}
-            >
-                <Pressable 
-                    style={styles.modalOverlay} 
-                    onPress={() => setMenuVisible(false)}
+            {menuVisible && (
+                <Modal
+                    transparent={true}
+                    visible={true}
+                    animationType="fade"
+                    onRequestClose={() => setMenuVisible(false)}
                 >
-                    <View 
-                        style={styles.menuContainer}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={(e) => e.stopPropagation()}
+                    <Pressable 
+                        style={styles.modalOverlay} 
+                        onPress={() => setMenuVisible(false)}
                     >
-                        {/* Header con avatar y nombre de usuario */}
-                        <View style={styles.menuHeader}>
-                            <Image 
-                                source={profileImage} 
-                                style={styles.menuAvatar} 
-                            />
-                            <Text style={styles.userName}>{userData?.nombre || 'Usuario'}</Text>
-                        </View>
+                        <View 
+                            style={styles.menuContainer}
+                            onStartShouldSetResponder={() => true}
+                            onTouchEnd={(e) => e.stopPropagation()}
+                        >
+                            {/* Header con avatar y nombre de usuario */}
+                            <View style={styles.menuHeader}>
+                                <Image 
+                                    source={profileImage} 
+                                    style={styles.menuAvatar} 
+                                />
+                                <Text style={styles.userName}>
+                                    {userData?.nombre || 'Usuario'}
+                                </Text>
+                            </View>
 
-                        {/* Menu Items */}
-                        <View style={styles.menuItemsContainer}>                            {/* Perfil con submenú */}
-                            <View>
+                            {/* Menu Items */}
+                            <View style={styles.menuItemsContainer}>
+                                {/* Perfil con submenú */}
+                                <View>
+                                    <TouchableOpacity 
+                                        style={styles.menuItem} 
+                                        onPress={() => {
+                                            // Si es invitado, no permitir expandir el submenú
+                                            if (!userData?.isGuest) {
+                                                toggleSection('profile');
+                                            }
+                                        }}
+                                    >
+                                        <View style={styles.menuItemContent}>
+                                            <FontAwesome name="user-circle" size={20} color={colors.primary} />
+                                            <Text style={styles.menuItemText}>Perfil</Text>
+                                            {!userData?.isGuest && (
+                                                <Ionicons 
+                                                    name={expandedSection === 'profile' ? "chevron-up" : "chevron-down"} 
+                                                    size={16} 
+                                                    color={colors.textSecondary} 
+                                                    style={{marginLeft: 'auto'}}
+                                                />
+                                            )}
+                                        </View>
+                                    </TouchableOpacity>
+                                    
+                                    {/* Para usuario invitado, mostrar solo el nombre de usuario */}
+                                    {userData?.isGuest && (
+                                        <View style={styles.submenu}>
+                                            <View style={styles.submenuItem}>
+                                                <Ionicons name="person" size={16} color={colors.secondary} />
+                                                <Text style={styles.submenuLabel}>Usuario:</Text>
+                                                <Text style={styles.submenuValue}>INVITADO</Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                    
+                                    {/* Submenú de Perfil para usuarios registrados */}
+                                    {expandedSection === 'profile' && !userData?.isGuest && (
+                                        <View style={styles.submenu}>
+                                            <View style={styles.submenuItem}>
+                                                <Ionicons name="person" size={16} color={colors.secondary} />
+                                                <Text style={styles.submenuLabel}>Usuario:</Text>
+                                                <Text style={styles.submenuValue}>
+                                                    {userData?.userName || 'No disponible'}
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity 
+                                                style={styles.submenuItem}
+                                                onPress={() => handleProfileItemClick('email')}
+                                            >
+                                                <Ionicons name="mail" size={16} color={colors.secondary} />
+                                                <Text style={styles.submenuLabel}>Email:</Text>
+                                                <Text style={styles.submenuValue}>
+                                                    {userData?.email || 'No disponible'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={styles.submenuItem}
+                                                onPress={() => handleProfileItemClick('teléfono')}
+                                            >
+                                                <Ionicons name="call" size={16} color={colors.secondary} />
+                                                <Text style={styles.submenuLabel}>Celular:</Text>
+                                                <Text style={styles.submenuValue}>
+                                                    {userData?.celular || 'No disponible'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    )}
+                                </View>
+                                
+                                {/* Configuración (sin submenú) */}
                                 <TouchableOpacity 
                                     style={styles.menuItem} 
-                                    onPress={() => {
-                                        // Si es invitado, no permitir expandir el submenú
-                                        if (!userData?.isGuest) {
-                                            toggleSection('profile');
-                                        }
-                                    }}
+                                    onPress={handleNavigateToSettings}
                                 >
                                     <View style={styles.menuItemContent}>
-                                        <FontAwesome name="user-circle" size={20} color={colors.primary} />
-                                        <Text style={styles.menuItemText}>Perfil</Text>
-                                        {!userData?.isGuest && (
-                                            <Ionicons 
-                                                name={expandedSection === 'profile' ? "chevron-up" : "chevron-down"} 
-                                                size={16} 
-                                                color={colors.textSecondary} 
-                                                style={{marginLeft: 'auto'}}
-                                            />
-                                        )}
+                                        <Ionicons name="settings-outline" size={20} color={colors.primary} />
+                                        <Text style={styles.menuItemText}>Configuración</Text>
                                     </View>
                                 </TouchableOpacity>
                                 
-                                {/* Para usuario invitado, mostrar solo el nombre de usuario */}
-                                {userData?.isGuest && (
-                                    <View style={styles.submenu}>
-                                        <View style={styles.submenuItem}>
-                                            <Ionicons name="person" size={16} color={colors.secondary} />
-                                            <Text style={styles.submenuLabel}>Usuario:</Text>
-                                            <Text style={styles.submenuValue}>INVITADO</Text>
-                                        </View>
+                                {/* Salir (sin submenú) */}
+                                <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                                    <View style={styles.menuItemContent}>
+                                        <MaterialIcons name="logout" size={20} color={colors.danger} />
+                                        <Text style={[styles.menuItemText, {color: colors.danger}]}>
+                                            Cerrar Sesión
+                                        </Text>
                                     </View>
-                                )}
-                                
-                                {/* Submenú de Perfil para usuarios registrados */}
-                                {expandedSection === 'profile' && !userData?.isGuest && (
-                                    <View style={styles.submenu}>
-                                        <View style={styles.submenuItem}>
-                                            <Ionicons name="person" size={16} color={colors.secondary} />
-                                            <Text style={styles.submenuLabel}>Usuario:</Text>
-                                            <Text style={styles.submenuValue}>
-                                                {userData?.userName || 'No disponible'}
-                                            </Text>
-                                        </View>
-                                        <TouchableOpacity 
-                                            style={styles.submenuItem}
-                                            onPress={() => handleProfileItemClick('email')}
-                                        >
-                                            <Ionicons name="mail" size={16} color={colors.secondary} />
-                                            <Text style={styles.submenuLabel}>Email:</Text>
-                                            <Text style={styles.submenuValue}>
-                                                {userData?.email || 'No disponible'}
-                                            </Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity 
-                                            style={styles.submenuItem}
-                                            onPress={() => handleProfileItemClick('teléfono')}
-                                        >                                            <Ionicons name="call" size={16} color={colors.secondary} />
-                                            <Text style={styles.submenuLabel}>Celular:</Text>
-                                            <Text style={styles.submenuValue}>
-                                                {userData?.celular || 'No disponible'}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
+                                </TouchableOpacity>
                             </View>
-                            
-                            {/* Configuración (sin submenú) */}
-                            <TouchableOpacity 
-                                style={styles.menuItem} 
-                                onPress={handleNavigateToSettings}
-                            >
-                                <View style={styles.menuItemContent}>
-                                    <Ionicons name="settings-outline" size={20} color={colors.primary} />
-                                    <Text style={styles.menuItemText}>Configuración</Text>
-                                </View>
-                            </TouchableOpacity>
-                            
-                            {/* Salir (sin submenú) */}
-                            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                                <View style={styles.menuItemContent}>
-                                    <MaterialIcons name="logout" size={20} color={colors.danger} />
-                                    <Text style={[styles.menuItemText, {color: colors.danger}]}>Cerrar Sesión</Text>
-                                </View>
-                            </TouchableOpacity>
                         </View>
-                    </View>
-                </Pressable>
-            </Modal>
+                    </Pressable>
+                </Modal>
+            )}
 
             {/* Modal Próximamente */}
-            <Modal
-                transparent={true}
-                visible={comingSoonModal}
-                animationType="fade"
-                onRequestClose={() => setComingSoonModal(false)}
-            >
-                <Pressable 
-                    style={styles.comingSoonModalOverlay} 
-                    onPress={() => setComingSoonModal(false)}
+            {comingSoonModal && (
+                <Modal
+                    transparent={true}
+                    visible={true}
+                    animationType="fade"
+                    onRequestClose={() => setComingSoonModal(false)}
                 >
-                    <View 
-                        style={styles.comingSoonModalContent}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={(e) => e.stopPropagation()}
+                    <Pressable 
+                        style={styles.comingSoonModalOverlay} 
+                        onPress={() => setComingSoonModal(false)}
                     >
-                        <Ionicons 
-                            name="rocket-outline" 
-                            size={60} 
-                            color={colors.primary} 
-                            style={styles.comingSoonIcon}
-                        />
-                        <Text style={styles.comingSoonTitle}>¡Próximamente!</Text>
-                        <Text style={styles.comingSoonMessage}>
-                            La función "{comingSoonFeature}" estará disponible en futuras actualizaciones. 
-                            Estamos trabajando para mejorar tu experiencia.
-                        </Text>
-                        <TouchableOpacity 
-                            style={styles.comingSoonButton}
-                            onPress={() => setComingSoonModal(false)}
+                        <View 
+                            style={styles.comingSoonModalContent}
+                            onStartShouldSetResponder={() => true}
+                            onTouchEnd={(e) => e.stopPropagation()}
                         >
-                            <Text style={styles.comingSoonButtonText}>Entendido</Text>                        </TouchableOpacity>
-                    </View>
-                </Pressable>
-            </Modal>
+                            <Ionicons 
+                                name="rocket-outline" 
+                                size={60} 
+                                color={colors.primary} 
+                                style={styles.comingSoonIcon}
+                            />
+                            <Text style={styles.comingSoonTitle}>¡Próximamente!</Text>
+                            <Text style={styles.comingSoonMessage}>
+                                La función "{comingSoonFeature}" estará disponible en futuras actualizaciones. 
+                                Estamos trabajando para mejorar tu experiencia.
+                            </Text>
+                            <TouchableOpacity 
+                                style={styles.comingSoonButton}
+                                onPress={() => setComingSoonModal(false)}
+                            >
+                                <Text style={styles.comingSoonButtonText}>Entendido</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Modal>
+            )}
 
             {/* Modal de advertencia para usuarios invitados */}
-            <Modal
-                transparent={true}
-                visible={guestWarningModal}
-                animationType="fade"
-                onRequestClose={() => setGuestWarningModal(false)}
-            >
-                <Pressable 
-                    style={styles.comingSoonModalOverlay} 
-                    onPress={() => setGuestWarningModal(false)}
+            {guestWarningModal && (
+                <Modal
+                    transparent={true}
+                    visible={true}
+                    animationType="fade"
+                    onRequestClose={() => setGuestWarningModal(false)}
                 >
-                    <View 
-                        style={styles.comingSoonModalContent}
-                        onStartShouldSetResponder={() => true}
-                        onTouchEnd={(e) => e.stopPropagation()}
+                    <Pressable 
+                        style={styles.comingSoonModalOverlay} 
+                        onPress={() => setGuestWarningModal(false)}
                     >
-                        <Ionicons 
-                            name="lock-closed-outline" 
-                            size={60} 
-                            color={colors.primary} 
-                            style={styles.comingSoonIcon}
-                        />
-                        <Text style={styles.comingSoonTitle}>Acceso restringido</Text>
-                        <Text style={styles.comingSoonMessage}>
-                            No se puede acceder por haberse logeado como invitado.
-                        </Text>
-                        <TouchableOpacity 
-                            style={styles.comingSoonButton}
-                            onPress={() => setGuestWarningModal(false)}
+                        <View 
+                            style={styles.comingSoonModalContent}
+                            onStartShouldSetResponder={() => true}
+                            onTouchEnd={(e) => e.stopPropagation()}
                         >
-                            <Text style={styles.comingSoonButtonText}>Entendido</Text>
-                        </TouchableOpacity>
-                    </View>
-                </Pressable>
-            </Modal>
+                            <Ionicons 
+                                name="lock-closed-outline" 
+                                size={60} 
+                                color={colors.primary} 
+                                style={styles.comingSoonIcon}
+                            />
+                            <Text style={styles.comingSoonTitle}>Acceso restringido</Text>
+                            <Text style={styles.comingSoonMessage}>
+                                No se puede acceder por haberse logeado como invitado.
+                            </Text>
+                            <TouchableOpacity 
+                                style={styles.comingSoonButton}
+                                onPress={() => setGuestWarningModal(false)}
+                            >
+                                <Text style={styles.comingSoonButtonText}>Entendido</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Pressable>
+                </Modal>
+            )}
         </View>
     );
 };
