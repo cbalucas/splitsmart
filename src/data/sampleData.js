@@ -116,3 +116,166 @@ export const sampleEvents = [
       imagenProfile: null
     }
   ];
+  
+  export const sampleUserConfigurations = [
+    {
+      id: '1',
+      userId: '1',
+      tema: 'dark',           // 'light' | 'dark' | 'system'
+      idioma: 'es',           // 'es' | 'en' | 'pt' | 'fr'
+      notificaciones: {
+        operacion: true,      // Notificaciones de operaciones exitosas
+        confirmacion: true,   // Confirmación antes de acciones importantes
+        proximamente: false,  // Avisos sobre funciones próximamente disponibles
+        error: true,          // Mensajes de error
+        estadoPagos: true     // Notificaciones sobre cambios en estado de pagos
+      },
+      seguridad: {
+        biometria: false,     // Autenticación biométrica
+        dobleFactorAuth: false, // Autenticación de dos factores
+        recordarSesion: true  // Mantener sesión activa
+      },
+      visualizacion: {
+        formatoMoneda: '$',   // Símbolo de moneda
+        separadorDecimal: ',',// Separador para decimales
+        separadorMiles: '.',  // Separador para miles
+        decimales: 2,         // Cantidad de decimales a mostrar
+        colorPrimario: '#4CAF50', // Color primario personalizado
+        fuente: 'default'     // Tipo de fuente
+      },
+      privacidad: {
+        perfilVisible: true,  // Perfil visible para otros usuarios
+        estadisticasCompartidas: false, // Compartir estadísticas de uso
+        historialBusquedas: true // Guardar historial de búsquedas
+      },
+      ultimaActualizacion: '2025-05-08T10:30:45Z'
+    },
+    {
+      id: '2',
+      userId: '2',
+      tema: 'dark',           // 'light' | 'dark' | 'system'
+      idioma: 'es',           // 'es' | 'en' | 'pt' | 'fr'
+      notificaciones: {
+        operacion: true,
+        confirmacion: true,
+        proximamente: true,
+        error: true,
+        estadoPagos: true
+      },
+      seguridad: {
+        biometria: true,
+        dobleFactorAuth: false,
+        recordarSesion: false
+      },
+      visualizacion: {
+        formatoMoneda: '$',
+        separadorDecimal: ',',
+        separadorMiles: '.',
+        decimales: 2,
+        colorPrimario: '#2196F3',
+        fuente: 'default'
+      },
+      privacidad: {
+        perfilVisible: false,
+        estadisticasCompartidas: false,
+        historialBusquedas: false
+      },
+      ultimaActualizacion: '2025-05-07T14:22:10Z'
+    },
+    {
+      id: '3',
+      userId: '3',
+      tema: 'dark',           // 'light' | 'dark' | 'system'
+      idioma: 'es',           // 'es' | 'en' | 'pt' | 'fr'
+      notificaciones: {
+        operacion: false,
+        confirmacion: true,
+        proximamente: false,
+        error: true,
+        estadoPagos: true
+      },
+      seguridad: {
+        biometria: true,
+        dobleFactorAuth: true,
+        recordarSesion: false
+      },
+      visualizacion: {
+        formatoMoneda: 'USD',
+        separadorDecimal: '.',
+        separadorMiles: ',',
+        decimales: 2,
+        colorPrimario: '#673AB7',
+        fuente: 'sans-serif'
+      },
+      privacidad: {
+        perfilVisible: true,
+        estadisticasCompartidas: true,
+        historialBusquedas: true
+      },
+      ultimaActualizacion: '2025-05-05T08:45:33Z'
+    },
+    {
+      id: '4',
+      userId: '4',
+      tema: 'dark',           // 'light' | 'dark' | 'system'
+      idioma: 'es',           // 'es' | 'en' | 'pt' | 'fr'
+      notificaciones: {
+        operacion: true,
+        confirmacion: false,
+        proximamente: false,
+        error: true,
+        estadoPagos: false
+      },
+      seguridad: {
+        biometria: false,
+        dobleFactorAuth: false,
+        recordarSesion: true
+      },
+      visualizacion: {
+        formatoMoneda: '$',
+        separadorDecimal: ',',
+        separadorMiles: '.',
+        decimales: 2,
+        colorPrimario: '#FF5722',
+        fuente: 'default'
+      },
+      privacidad: {
+        perfilVisible: false,
+        estadisticasCompartidas: false,
+        historialBusquedas: true
+      },
+      ultimaActualizacion: '2025-05-01T19:12:05Z'
+    },
+    {
+      id: '5',
+      userId: '5',
+      tema: 'dark',           // 'light' | 'dark' | 'system'
+      idioma: 'es',           // 'es' | 'en' | 'pt' | 'fr'
+      notificaciones: {
+        operacion: true,
+        confirmacion: true,
+        proximamente: true,
+        error: true,
+        estadoPagos: true
+      },
+      seguridad: {
+        biometria: true,
+        dobleFactorAuth: false,
+        recordarSesion: true
+      },
+      visualizacion: {
+        formatoMoneda: '$',
+        separadorDecimal: ',',
+        separadorMiles: '.',
+        decimales: 2,
+        colorPrimario: '#009688',
+        fuente: 'serif'
+      },
+      privacidad: {
+        perfilVisible: true,
+        estadisticasCompartidas: false,
+        historialBusquedas: false
+      },
+      ultimaActualizacion: '2025-05-06T21:40:15Z'
+    }
+  ];

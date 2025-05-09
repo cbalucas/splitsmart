@@ -8,12 +8,12 @@ import styles from '../styles/avatarMenuStyles';
 import { AuthContext } from '../context/AuthContext';
 import { sampleUsers } from '../data/sampleData';
 
-const AvatarMenu = ({ logout: propLogout }) => {
-    const [menuVisible, setMenuVisible] = useState(false);
+const AvatarMenu = ({ logout: propLogout }) => {    const [menuVisible, setMenuVisible] = useState(false);
     const [expandedSection, setExpandedSection] = useState(null);
     const [userData, setUserData] = useState(null);
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [comingSoonFeature, setComingSoonFeature] = useState('');
+    const [guestWarningModal, setGuestWarningModal] = useState(false);
     const navigation = useNavigation();
     const { logout: contextLogout, user } = useContext(AuthContext);
     
@@ -76,23 +76,31 @@ const AvatarMenu = ({ logout: propLogout }) => {
         } else {
             setExpandedSection(section); // Abrir la nueva sección
         }
-    };
-
-    const handleNavigateToSettings = () => {
+    };    const handleNavigateToSettings = () => {
         setMenuVisible(false);
-        navigation.navigate('Settings');
+        // Si es un usuario invitado, mostrar la advertencia en lugar de navegar
+        if (user?.isGuest) {
+            // Mostrar modal de advertencia específico para invitado
+            showGuestWarningModal();
+        } else {
+            navigation.navigate('Settings');
+        }
     };
 
     const handleLogout = async () => {
         setMenuVisible(false);
         await logout();
-    };
-
-    // Función para mostrar el modal "Próximamente"
+    };    // Función para mostrar el modal "Próximamente"
     const showComingSoonModal = (feature) => {
         setComingSoonFeature(feature);
         setMenuVisible(false); // Cerrar el menú
         setComingSoonModal(true); // Mostrar el modal
+    };
+    
+    // Función para mostrar el modal de advertencia para usuarios invitados
+    const showGuestWarningModal = () => {
+        setMenuVisible(false); // Cerrar el menú
+        setGuestWarningModal(true); // Mostrar el modal
     };
 
     // Gestionar el clic en las opciones del submenú de perfil
@@ -137,33 +145,50 @@ const AvatarMenu = ({ logout: propLogout }) => {
                         </View>
 
                         {/* Menu Items */}
-                        <View style={styles.menuItemsContainer}>
-                            {/* Perfil con submenú */}
+                        <View style={styles.menuItemsContainer}>                            {/* Perfil con submenú */}
                             <View>
                                 <TouchableOpacity 
                                     style={styles.menuItem} 
-                                    onPress={() => toggleSection('profile')}
+                                    onPress={() => {
+                                        // Si es invitado, no permitir expandir el submenú
+                                        if (!userData?.isGuest) {
+                                            toggleSection('profile');
+                                        }
+                                    }}
                                 >
                                     <View style={styles.menuItemContent}>
                                         <FontAwesome name="user-circle" size={20} color={colors.primary} />
                                         <Text style={styles.menuItemText}>Perfil</Text>
-                                        <Ionicons 
-                                            name={expandedSection === 'profile' ? "chevron-up" : "chevron-down"} 
-                                            size={16} 
-                                            color={colors.textSecondary} 
-                                            style={{marginLeft: 'auto'}}
-                                        />
+                                        {!userData?.isGuest && (
+                                            <Ionicons 
+                                                name={expandedSection === 'profile' ? "chevron-up" : "chevron-down"} 
+                                                size={16} 
+                                                color={colors.textSecondary} 
+                                                style={{marginLeft: 'auto'}}
+                                            />
+                                        )}
                                     </View>
                                 </TouchableOpacity>
                                 
-                                {/* Submenú de Perfil (sin la opción de Editar perfil) */}
-                                {expandedSection === 'profile' && (
+                                {/* Para usuario invitado, mostrar solo el nombre de usuario */}
+                                {userData?.isGuest && (
+                                    <View style={styles.submenu}>
+                                        <View style={styles.submenuItem}>
+                                            <Ionicons name="person" size={16} color={colors.secondary} />
+                                            <Text style={styles.submenuLabel}>Usuario:</Text>
+                                            <Text style={styles.submenuValue}>INVITADO</Text>
+                                        </View>
+                                    </View>
+                                )}
+                                
+                                {/* Submenú de Perfil para usuarios registrados */}
+                                {expandedSection === 'profile' && !userData?.isGuest && (
                                     <View style={styles.submenu}>
                                         <View style={styles.submenuItem}>
                                             <Ionicons name="person" size={16} color={colors.secondary} />
                                             <Text style={styles.submenuLabel}>Usuario:</Text>
                                             <Text style={styles.submenuValue}>
-                                                {userData?.isGuest ? 'INVITADO' : (userData?.userName || 'No disponible')}
+                                                {userData?.userName || 'No disponible'}
                                             </Text>
                                         </View>
                                         <TouchableOpacity 
@@ -173,17 +198,16 @@ const AvatarMenu = ({ logout: propLogout }) => {
                                             <Ionicons name="mail" size={16} color={colors.secondary} />
                                             <Text style={styles.submenuLabel}>Email:</Text>
                                             <Text style={styles.submenuValue}>
-                                                {userData?.isGuest ? '' : (userData?.email || 'No disponible')}
+                                                {userData?.email || 'No disponible'}
                                             </Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity 
                                             style={styles.submenuItem}
                                             onPress={() => handleProfileItemClick('teléfono')}
-                                        >
-                                            <Ionicons name="call" size={16} color={colors.secondary} />
+                                        >                                            <Ionicons name="call" size={16} color={colors.secondary} />
                                             <Text style={styles.submenuLabel}>Celular:</Text>
                                             <Text style={styles.submenuValue}>
-                                                {userData?.isGuest ? '' : (userData?.celular || 'No disponible')}
+                                                {userData?.celular || 'No disponible'}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -243,6 +267,41 @@ const AvatarMenu = ({ logout: propLogout }) => {
                         <TouchableOpacity 
                             style={styles.comingSoonButton}
                             onPress={() => setComingSoonModal(false)}
+                        >
+                            <Text style={styles.comingSoonButtonText}>Entendido</Text>                        </TouchableOpacity>
+                    </View>
+                </Pressable>
+            </Modal>
+
+            {/* Modal de advertencia para usuarios invitados */}
+            <Modal
+                transparent={true}
+                visible={guestWarningModal}
+                animationType="fade"
+                onRequestClose={() => setGuestWarningModal(false)}
+            >
+                <Pressable 
+                    style={styles.comingSoonModalOverlay} 
+                    onPress={() => setGuestWarningModal(false)}
+                >
+                    <View 
+                        style={styles.comingSoonModalContent}
+                        onStartShouldSetResponder={() => true}
+                        onTouchEnd={(e) => e.stopPropagation()}
+                    >
+                        <Ionicons 
+                            name="lock-closed-outline" 
+                            size={60} 
+                            color={colors.primary} 
+                            style={styles.comingSoonIcon}
+                        />
+                        <Text style={styles.comingSoonTitle}>Acceso restringido</Text>
+                        <Text style={styles.comingSoonMessage}>
+                            No se puede acceder por haberse logeado como invitado.
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.comingSoonButton}
+                            onPress={() => setGuestWarningModal(false)}
                         >
                             <Text style={styles.comingSoonButtonText}>Entendido</Text>
                         </TouchableOpacity>

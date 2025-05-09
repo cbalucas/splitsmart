@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,36 +10,79 @@ import {
   Alert, 
   Switch,
   Image,
-  Linking
+  Linking,
+  Pressable
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../styles/colors';
+import modalStyles from '../styles/modalStyles';
 import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext';
 
 const SettingsScreen = () => {
-  const { user, logout, updateProfile } = useContext(AuthContext);
+  const { user, logout, updateProfile, userConfig, updateUserConfig } = useContext(AuthContext);
+  const navigation = useNavigation();
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.celular || '');
   const [showPassword, setShowPassword] = useState(false);
 
   const [notificationsModalVisible, setNotificationsModalVisible] = useState(false);
-  const [operationNotifications, setOperationNotifications] = useState(true);
-  const [confirmationNotifications, setConfirmationNotifications] = useState(true);
-  const [comingSoonNotifications, setComingSoonNotifications] = useState(true);
-  const [errorNotifications, setErrorNotifications] = useState(true);
-  const [paymentNotifications, setPaymentNotifications] = useState(true);
+  const [operationNotifications, setOperationNotifications] = useState(
+    userConfig?.notificaciones?.operacion ?? true
+  );
+  const [confirmationNotifications, setConfirmationNotifications] = useState(
+    userConfig?.notificaciones?.confirmacion ?? true
+  );
+  const [comingSoonNotifications, setComingSoonNotifications] = useState(
+    userConfig?.notificaciones?.proximamente ?? true
+  );
+  const [errorNotifications, setErrorNotifications] = useState(
+    userConfig?.notificaciones?.error ?? true
+  );
+  const [paymentNotifications, setPaymentNotifications] = useState(
+    userConfig?.notificaciones?.estadoPagos ?? true
+  );
 
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState('light'); // 'light' o 'dark'
+  const [selectedTheme, setSelectedTheme] = useState(
+    userConfig?.tema ?? 'light'
+  ); // 'light', 'dark' o 'system'
 
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('es'); // 'es', 'en', etc.
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    userConfig?.idioma ?? 'es'
+  ); // 'es', 'en', etc.
+  
+  // Actualizar estados locales cuando cambia la configuración del usuario
+  useEffect(() => {
+    if (userConfig) {
+      console.log("Cargando preferencias del usuario desde la configuración");
+      setOperationNotifications(userConfig.notificaciones?.operacion ?? true);
+      setConfirmationNotifications(userConfig.notificaciones?.confirmacion ?? true);
+      setComingSoonNotifications(userConfig.notificaciones?.proximamente ?? true);
+      setErrorNotifications(userConfig.notificaciones?.error ?? true);
+      setPaymentNotifications(userConfig.notificaciones?.estadoPagos ?? true);
+      setSelectedTheme(userConfig.tema ?? 'light');
+      setSelectedLanguage(userConfig.idioma ?? 'es');
+    }
+  }, [userConfig]);
+
+  // Verificar si el usuario es invitado y mostrar advertencia
+  useEffect(() => {
+    if (user?.isGuest) {
+      setGuestWarningVisible(true);
+    }
+  }, [user]);
 
   const [aboutModalVisible, setAboutModalVisible] = useState(false);
+  
+  // Estado para el modal de advertencia de usuario invitado
+  const [guestWarningVisible, setGuestWarningVisible] = useState(false);
 
   const resetForm = () => {
     setCurrentPassword('');
@@ -56,8 +99,18 @@ const SettingsScreen = () => {
   const handleOpenNotificationsModal = () => {
     setNotificationsModalVisible(true);
   };
-
   const handleSaveNotifications = () => {
+    // Actualizar configuración de notificaciones en el contexto
+    updateUserConfig({
+      notificaciones: {
+        operacion: operationNotifications,
+        confirmacion: confirmationNotifications,
+        proximamente: comingSoonNotifications,
+        error: errorNotifications,
+        estadoPagos: paymentNotifications
+      }
+    });
+    
     Alert.alert('Éxito', 'Configuración de notificaciones guardada correctamente');
     setNotificationsModalVisible(false);
   };
@@ -95,9 +148,17 @@ const SettingsScreen = () => {
 
   const handleOpenThemeModal = () => {
     setThemeModalVisible(true);
-  };
+  };  const { setThemeType } = useContext(ThemeContext);
 
   const handleSaveTheme = () => {
+    // Actualizar tema en la configuración del usuario
+    updateUserConfig({
+      tema: selectedTheme
+    });
+    
+    // También actualizar directamente en el contexto de tema
+    setThemeType(selectedTheme);
+    
     Alert.alert('Éxito', 'Tema actualizado correctamente');
     setThemeModalVisible(false);
   };
@@ -105,8 +166,12 @@ const SettingsScreen = () => {
   const handleOpenLanguageModal = () => {
     setLanguageModalVisible(true);
   };
-
   const handleSaveLanguage = () => {
+    // Actualizar idioma en la configuración del usuario
+    updateUserConfig({
+      idioma: selectedLanguage
+    });
+    
     Alert.alert('Éxito', 'Idioma actualizado correctamente');
     setLanguageModalVisible(false);
   };
@@ -406,8 +471,31 @@ const SettingsScreen = () => {
                   <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
               </View>
-              
-              <View style={styles.themeOptionsContainer}>
+                <View style={styles.themeOptionsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    selectedTheme === 'system' && styles.selectedThemeOption
+                  ]}
+                  onPress={() => setSelectedTheme('system')}
+                >
+                  <View style={styles.themePreview}>
+                    <View style={styles.themePreviewSystem}>
+                      <View style={styles.themePreviewSystemHalf1} />
+                      <View style={styles.themePreviewSystemHalf2} />
+                    </View>
+                  </View>
+                  <View style={styles.themeTextContainer}>
+                    <Text style={styles.notificationTitle}>Automático (Sistema)</Text>
+                    <Text style={styles.notificationDescription}>
+                      Sigue la configuración de tu dispositivo
+                    </Text>
+                  </View>
+                  {selectedTheme === 'system' && (
+                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+                
                 <TouchableOpacity
                   style={[
                     styles.themeOption,
@@ -654,13 +742,56 @@ const SettingsScreen = () => {
                   style={[styles.button, styles.saveButton, {flex: 0.5}]}
                   onPress={() => setAboutModalVisible(false)}
                 >
-                  <Text style={[styles.buttonText, {color: colors.white}]}>Cerrar</Text>
-                </TouchableOpacity>
+                  <Text style={[styles.buttonText, {color: colors.white}]}>Cerrar</Text>                </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
       </ScrollView>
+      
+      {/* Modal de advertencia para usuario invitado */}
+      <Modal
+        transparent={true}
+        visible={guestWarningVisible}
+        animationType="fade"
+        onRequestClose={() => {
+          navigation.goBack();
+          setGuestWarningVisible(false);
+        }}
+      >
+        <Pressable 
+          style={modalStyles.guestWarningModalOverlay} 
+          onPress={() => {
+            navigation.goBack();
+            setGuestWarningVisible(false);
+          }}
+        >
+          <View 
+            style={modalStyles.guestWarningModalContent}
+            onStartShouldSetResponder={() => true}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >            <Ionicons 
+              name="lock-closed-outline" 
+              size={60} 
+              color={colors.primary} 
+              style={modalStyles.guestWarningIcon}
+            />
+            <Text style={modalStyles.guestWarningTitle}>Acceso restringido</Text>
+            <Text style={modalStyles.guestWarningMessage}>
+              No se puede acceder por haberse logeado como invitado.
+            </Text>
+            <TouchableOpacity 
+              style={modalStyles.guestWarningButton}
+              onPress={() => {
+                navigation.goBack();
+                setGuestWarningVisible(false);
+              }}
+            >
+              <Text style={modalStyles.guestWarningButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -867,12 +998,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+  },  themePreviewSystem: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  themePreviewSystemHalf1: {
+    width: 20,
+    height: 40,
+    backgroundColor: '#FFFFFF',
+  },
+  themePreviewSystemHalf2: {
+    width: 20,
+    height: 40,
+    backgroundColor: '#121212',
   },
   themePreviewLight: {
     width: 40,
     height: 40,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   themePreviewDark: {
     width: 40,

@@ -11,14 +11,22 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native'; 
 import { sampleUsers } from '../data/sampleData';
+import colors from '../styles/colors';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const { login } = useContext(AuthContext);
+  const { isDarkMode } = useContext(ThemeContext);
   const [identifier, setIdentifier] = useState(''); // Puede ser email o nombre de usuario
   const [password, setPassword] = useState('');
+  
+  // Determinar los colores según el tema
+  const textColor = isDarkMode ? colors.textPrimaryDark : colors.textPrimaryLight;
+  const backgroundColor = isDarkMode ? colors.backgroundDark : colors.backgroundLight;
+  const cardColor = isDarkMode ? colors.cardDark : colors.cardLight;
   const handleLogin = () => {
     console.log("Intentando iniciar sesión con:", identifier);
     

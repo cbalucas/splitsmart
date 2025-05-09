@@ -1,6 +1,6 @@
 // src/navigation/AppNavigator.js
 import React, { useContext } from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, StyleSheet } from 'react-native';
@@ -14,6 +14,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import SplashScreen from '../screens/SplashScreen';
 
 import { AuthContext } from '../context/AuthContext';
+import { ThemeContext } from '../context/ThemeContext';
 import colors from '../styles/colors';
 
 const Stack = createStackNavigator();
@@ -119,11 +120,14 @@ function AuthenticatedStack() {
 }
 
 export default function AppNavigator() {
+  const { userConfig } = useContext(AuthContext);
+  const { isDarkMode } = useContext(ThemeContext);
+  
   // Configuración común para evitar parpadeos durante las transiciones
   const screenOptions = {
     headerShown: false,
     safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
-    cardStyle: { backgroundColor: colors.card },
+    cardStyle: { backgroundColor: isDarkMode ? colors.cardDark : colors.cardLight },
     cardOverlayEnabled: true,
     animationEnabled: true,
     detachPreviousScreen: false,
@@ -135,17 +139,30 @@ export default function AppNavigator() {
     }),
   };
 
-  // Crear un tema personalizado extendiendo DefaultTheme
+  // Aplicar colores según el tema seleccionado
+  const themeColors = isDarkMode ? {
+    primary: colors.primaryDark,
+    background: colors.backgroundDark,
+    card: colors.cardDark,
+    text: colors.textPrimaryDark,
+    border: colors.borderDark,
+    notification: colors.primaryDark,
+  } : {
+    primary: colors.primary,
+    background: colors.backgroundLight,
+    card: colors.cardLight,
+    text: colors.textPrimaryLight,
+    border: colors.borderLight,
+    notification: colors.primary,
+  };
+
+  // Crear un tema personalizado extendiendo el tema base según el modo
+  const baseTheme = isDarkMode ? DarkTheme : DefaultTheme;
   const customTheme = {
-    ...DefaultTheme,
+    ...baseTheme,
     colors: {
-      ...DefaultTheme.colors,
-      primary: colors.primary,
-      background: colors.background,
-      card: colors.card,
-      text: colors.textPrimary,
-      border: colors.border,
-      notification: colors.primary,
+      ...baseTheme.colors,
+      ...themeColors
     },
   };
 
