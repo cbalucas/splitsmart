@@ -76,8 +76,7 @@ const SplashScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      
-      <Animated.View style={[
+        <Animated.View style={[
         styles.logoContainer,
         {
           opacity: fadeAnim,
@@ -89,23 +88,21 @@ const SplashScreen = () => {
           style={styles.logo}
           resizeMode="contain"
         />
-      </Animated.View>
-      
-      <Animated.Text style={[
-        styles.tagline,
-        { opacity: fadeAnim }
-      ]}>
-        Divide gastos de manera inteligente
-      </Animated.Text>
-      
-      <View style={styles.footerContainer}>
+        
+        <Animated.Text style={[
+          styles.tagline,
+          { opacity: fadeAnim }
+        ]}>
+          Divide gastos de manera inteligente
+        </Animated.Text>
+        
         <Animated.Text style={[
           styles.version,
           { opacity: fadeAnim }
         ]}>
           v1.0.0
         </Animated.Text>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -121,7 +118,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
   },
   logo: {
     width: 350,
@@ -135,14 +131,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tagline: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.white,
     textAlign: 'center',
     opacity: 0.9,
-  },
-  footerContainer: {
-    position: 'absolute',
-    bottom: 40,
+    marginTop: 5,
+    marginBottom: 8,
   },
   version: {
     fontSize: 14,

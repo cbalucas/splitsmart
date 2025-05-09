@@ -3,7 +3,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/HomeScreen';
-import ParticipantsScreen from '../screens/ParticipantsScreen';
+import ReferenceScreen from '../screens/ReferenceScreen';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import colors from '../styles/colors';
 
@@ -14,29 +14,31 @@ export default function AppTabs() {
   
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: '#1F2230',
-          height: 60 + insets.top, // Ajustar altura considerando el inset superior
-        },
-        headerStatusBarHeight: insets.top, // Usar esta propiedad en lugar de paddingTop
-        headerTitleStyle: {
-          color: '#FFF',
-        },
-        tabBarIcon: ({ color, size }) => {
-          let iconName;
-          if (route.name === 'Home') iconName = 'home-outline';
-          if (route.name === 'Participants') iconName = 'people-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#008000',
-        tabBarInactiveTintColor: 'gray',
-        tabBarStyle: {
-          backgroundColor: '#1F2230',
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8, // Ajustar padding inferior
-        },
-      })}
+      screenOptions={({ route }) => {
+        return {
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: '#1F2230',
+            height: 60 + insets.top,
+          },
+          headerStatusBarHeight: insets.top,
+          headerTitleStyle: {
+            color: '#FFF',
+          },
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Home') iconName = 'home-outline';
+            if (route.name === 'Reference') iconName = 'information-circle-outline';
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: '#008000',
+          tabBarInactiveTintColor: 'gray',
+          tabBarStyle: {
+            backgroundColor: '#1F2230',
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          },
+        };
+      }}
     >
       <Tab.Screen 
         name="Home" 
@@ -44,10 +46,9 @@ export default function AppTabs() {
         options={{ title: 'Eventos' }}
       />
       <Tab.Screen 
-        name="Participants" 
-        component={ParticipantsScreen}
-        options={{ title: 'Participantes' }}
-        initialParams={{ fromTabBar: true }} 
+        name="Reference" 
+        component={ReferenceScreen}
+        options={{ title: 'Información' }}
       />
     </Tab.Navigator>
   );
