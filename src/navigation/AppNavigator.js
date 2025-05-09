@@ -10,6 +10,7 @@ import AppTabs from './AppTabs';
 import CreateExpenseScreen from '../screens/CreateExpenseScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import ExpenseSummaryScreen from '../screens/ExpenseSummaryScreen';
+import ParticipantsScreen from '../screens/ParticipantsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SplashScreen from '../screens/SplashScreen';
 
@@ -36,8 +37,7 @@ function AuthenticatedStack() {
   };
 
   return (
-    <>
-      {user ? (
+    <>      {user ? (
         <Stack.Navigator screenOptions={authScreenOptions} initialRouteName="Tabs">
           {/* Tus tabs principales */}
           <Stack.Screen 
@@ -47,7 +47,7 @@ function AuthenticatedStack() {
               headerShown: false,
             }}
           />
-
+          
           {/* La pantalla de gastos */}
           <Stack.Screen
             name="CreateExpense"
@@ -55,6 +55,22 @@ function AuthenticatedStack() {
             options={() => ({
               headerShown: true,
               headerTitle: 'Gastos del Evento',
+              headerStyle: { 
+                backgroundColor: colors.card,
+                height: 60,
+              },
+              headerTintColor: colors.textPrimary,
+              headerStatusBarHeight: 40,
+            })}
+          />
+          
+          {/* Pantalla de participantes */}
+          <Stack.Screen
+            name="Participants"
+            component={ParticipantsScreen}
+            options={() => ({
+              headerShown: true,
+              headerTitle: 'Participantes',
               headerStyle: { 
                 backgroundColor: colors.card,
                 height: 60,
